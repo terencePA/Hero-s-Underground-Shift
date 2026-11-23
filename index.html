@@ -195,15 +195,15 @@
                         <div class="text-[9px] text-cyan-300 font-bold truncate" id="trackerTitle">📋 委託：清理地下城夜班怪物</div>
                         <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-0.5">
                             <div id="trackerBar" class="h-full bg-cyan-400 transition-all duration-200" style="width: 0%"></div>
-                        </div>
+                    <div class="bg-[#120f18] border border-emerald-500/40 rounded-lg px-1.5 py-1 flex items-center gap-0.5 text-[10px] font-bold text-emerald-300" title="背景自動同步中">
+                        <span>☁️</span>
+                        <span id="syncStatusIcon" class="text-[9px]">自動</span>
                     </div>
-                    <span id="trackerStatus" class="text-[9px] font-mono font-bold text-gray-300 shrink-0">0/20</span>
-                </button>
-
-                <div class="pointer-events-auto shrink-0">
-                    <button id="bossBtn" class="rpg-btn rpg-btn-red px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-lg">
-                        <span>💀</span>
-                        <span id="bossBtnText">首領</span>
+                    <button id="openLoginTopBtn" class="rpg-btn px-1.5 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-cyan-300" title="切換帳號／登入">
+                        🔑
+                    </button>
+                    <button id="muteBtn" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
+                        🔊
                     </button>
                 </div>
             </div>
@@ -442,6 +442,9 @@
                         <button id="saveProfileIdentityBtn" class="rpg-btn rpg-btn-gold w-full py-1.5 rounded font-bold text-xs">
                             💾 套用玩家 ID 與名稱
                         </button>
+                        <button id="switchAccountFromProfileBtn" class="rpg-btn w-full py-1.5 rounded font-bold text-xs text-cyan-300 border-cyan-500/50">
+                            🔑 開啟登入畫面 / 切換其他帳號
+                        </button>
                     </div>
 
                     <!-- 完整遊玩紀錄統計 -->
@@ -472,6 +475,49 @@
                                 <div class="text-[9px] text-gray-400">技能施放</div>
                                 <div class="font-bold text-emerald-300 font-mono" id="statSkills">0</div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 每次開啟網頁優先顯示的強制登入畫面 -->
+        <div id="loginModal" class="absolute inset-0 bg-[#09070d]/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="rpg-box w-full max-w-[390px] max-h-[90vh] flex flex-col overflow-hidden">
+                <div class="px-4 py-3 bg-gradient-to-r from-[#281d3b] via-[#1f182e] to-[#281d3b] border-b border-[#524569] text-center">
+                    <div class="text-2xl mb-1">🏰⚡</div>
+                    <div class="text-base font-black text-amber-300 tracking-wide">地下城輪班英雄打卡登入</div>
+                    <div class="text-[11px] text-gray-300 mt-0.5">請輸入您的專屬玩家 ID 與名稱以建立／載入個人存檔</div>
+                </div>
+
+                <div class="p-4 overflow-y-auto flex flex-col gap-3 text-xs">
+                    <div class="bg-[#14111c] border border-purple-500/40 rounded-lg p-3 flex flex-col gap-2.5">
+                        <div>
+                            <label class="text-[11px] text-cyan-300 font-bold block mb-1">玩家 ID（帳號識別碼）</label>
+                            <div class="flex gap-1.5">
+                                <input id="loginPlayerIdInput" type="text" class="flex-1 bg-[#1f1a29] border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400" placeholder="例如：PLY-8K4M2P">
+                                <button id="loginGenIdBtn" type="button" class="rpg-btn px-2.5 rounded-lg text-xs font-bold text-amber-300" title="產生全新唯一 ID">🎲 新ID</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] text-amber-300 font-bold block mb-1">遊戲者名稱（輪班英雄暱稱）</label>
+                            <input id="loginPlayerNameInput" type="text" maxlength="16" class="w-full bg-[#1f1a29] border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-amber-400" placeholder="請輸入您的角色名稱">
+                        </div>
+
+                        <button id="confirmLoginBtn" type="button" class="rpg-btn rpg-btn-gold w-full py-2.5 rounded-lg font-black text-sm mt-1">
+                            🚀 打卡上班並進入地下城
+                        </button>
+                    </div>
+
+                    <!-- 本機曾登入帳號快速切換區 -->
+                    <div class="bg-[#14111c] border border-[#3a314c] rounded-lg p-3 flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-purple-300">👥 本機已登入帳號快速切換</span>
+                            <span id="knownAccountsCount" class="text-[10px] text-gray-400 font-mono">0 個帳號</span>
+                        </div>
+                        <div id="knownAccountsList" class="flex flex-col gap-1.5 max-h-[145px] overflow-y-auto">
+                            <div class="text-[11px] text-gray-500 text-center py-2">尚無歷史登入紀錄，請輸入新 ID 開始</div>
                         </div>
                     </div>
                 </div>
@@ -589,7 +635,9 @@
          * ==========================================
          */
         const GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbxQcTH0YzOkmVGI-WQBomAgwupPC95I4anb9uxVjEq0hwu8LC-jv-f5xEHVMsoBdhKH/exec';
-        const STORAGE_KEY = 'heros_underground_shift_full_v1';
+        const STORAGE_PREFIX = 'heros_underground_shift_acc_v1_';
+        const KNOWN_ACCOUNTS_KEY = 'heros_underground_shift_known_accounts_v1';
+
 
         const HERO_DATA = [
             { id: 'zeus', name: '雷神 Zeus', title: '高壓電工', icon: '⚡', color: '#38bdf8', capeColor: '#1d4ed8', unlockFloor: 1, bonusText: '全技能威力 +25%', atkMult: 1.0 },
@@ -675,63 +723,140 @@
             return `PLY-${code}`;
         }
 
-        const DEFAULT_STATE = {
-            playerId: 'PLY-2C9D2E',
-            playerName: 'Terence',
-            autoCloudSync: true,
-            lastCloudSyncTime: '',
-            gold: 500,
-            crystals: 25,
-            floor: 1,
-            maxFloor: 1,
-            killsInFloor: 0,
-            heroLevel: 1,
-            exp: 0,
-            hp: 100,
-            maxHp: 100,
-            mp: 100,
-            maxMp: 100,
-            shiftSeconds: 0,
-            activeHero: 'zeus',
-            autoSkill: true,
-            upgrades: { atk: 1, spd: 1, critRate: 1, critDmg: 1, goldGain: 1 },
-            equippedWeapon: 'w_pickaxe',
-            ownedWeapons: {
-                w_pickaxe: { level: 1, stars: 1, shards: 0 }
-            },
-            weaponForgeCount: 0,
-            unlockedSkills: { lightning: 1, meteor: 1, slash: 1 },
-            equippedSkills: ['lightning', 'meteor', 'slash', null],
-            dolls: [1, 1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
-            dollSummonCount: 0,
-            codex: {
-                unlocked: {
-                    'heroes:zeus': true,
-                    'weapons:w_pickaxe': true,
-                    'dolls:1': true,
-                    'skills:lightning': true,
-                    'skills:meteor': true,
-                    'skills:slash': true
-                },
-                claimed: {}
-            },
-            totalKills: 0,
-            totalSkills: 0,
-            totalMerges: 0,
-            totalUpgrades: 0,
-            totalBounties: 0,
-            questProgress: {
-                q_kill: { count: 0, tier: 0 },
-                q_skill: { count: 0, tier: 0 },
-                q_merge: { count: 0, tier: 0 },
-                q_boss: { count: 0, tier: 0 }
-            },
-            mine: { activeRoute: null, endTime: 0, readyToClaim: false },
-            bounty: { active: false, templateIdx: 0, completed: false },
-            lastSaveTime: Date.now()
-        };
+        function sanitizePlayerId(rawId) {
+            const cleaned = String(rawId || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            return cleaned || generatePlayerId();
+        }
 
-        let state = loadState();
+        function createDefaultAccountState(playerId = '', playerName = '') {
+            const cleanId = sanitizePlayerId(playerId);
+            const cleanName = String(playerName || '').trim() || `冒險者_${cleanId.slice(-4)}`;
+            return {
+                playerId: cleanId,
+                playerName: cleanName,
+                autoCloudSync: true,
+                lastCloudSyncTime: '',
+                gold: 500,
+                crystals: 25,
+                floor: 1,
+                maxFloor: 1,
+                killsInFloor: 0,
+                heroLevel: 1,
+                exp: 0,
+                hp: 100,
+                maxHp: 100,
+                mp: 100,
+                maxMp: 100,
+                shiftSeconds: 0,
+                activeHero: 'zeus',
+                autoSkill: true,
+                upgrades: { atk: 1, spd: 1, critRate: 1, critDmg: 1, goldGain: 1 },
+                equippedWeapon: 'w_pickaxe',
+                ownedWeapons: {
+                    w_pickaxe: { level: 1, stars: 1, shards: 0 }
+                },
+                weaponForgeCount: 0,
+                unlockedSkills: { lightning: 1, meteor: 1, slash: 1 },
+                equippedSkills: ['lightning', 'meteor', 'slash', null],
+                dolls: [1, 1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+                dollSummonCount: 0,
+                codex: {
+                    unlocked: {
+                        'heroes:zeus': true,
+                        'weapons:w_pickaxe': true,
+                        'dolls:1': true,
+                        'skills:lightning': true,
+                        'skills:meteor': true,
+                        'skills:slash': true
+                    },
+                    claimed: {}
+                },
+                totalKills: 0,
+                totalSkills: 0,
+                totalMerges: 0,
+                totalUpgrades: 0,
+                totalBounties: 0,
+                questProgress: {
+                    q_kill: { count: 0, tier: 0 },
+                    q_skill: { count: 0, tier: 0 },
+                    q_merge: { count: 0, tier: 0 },
+                    q_boss: { count: 0, tier: 0 }
+                },
+                mine: { activeRoute: null, endTime: 0, readyToClaim: false },
+                bounty: { active: false, templateIdx: 0, completed: false },
+                lastSaveTime: Date.now()
+            };
+        }
+
+        function getKnownAccounts() {
+            try {
+                const raw = localStorage.getItem(KNOWN_ACCOUNTS_KEY);
+                const arr = raw ? JSON.parse(raw) : [];
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function recordKnownAccount(accState) {
+            try {
+                const list = getKnownAccounts();
+                const entry = {
+                    playerId: accState.playerId,
+                    playerName: accState.playerName,
+                    maxFloor: accState.maxFloor || 1,
+                    heroLevel: accState.heroLevel || 1,
+                    lastLoginAt: Date.now()
+                };
+                const filtered = list.filter(item => item.playerId !== accState.playerId);
+                filtered.unshift(entry);
+                localStorage.setItem(KNOWN_ACCOUNTS_KEY, JSON.stringify(filtered.slice(0, 12)));
+            } catch (e) {}
+        }
+
+        function normalizeLoadedState(parsed, fallbackId, fallbackName) {
+            const base = createDefaultAccountState(fallbackId, fallbackName);
+            const merged = {
+                ...base,
+                ...parsed,
+                playerId: sanitizePlayerId((parsed && parsed.playerId) || fallbackId),
+                playerName: String((parsed && parsed.playerName) || fallbackName || base.playerName).trim() || base.playerName,
+                autoCloudSync: true,
+                upgrades: { ...base.upgrades, ...((parsed && parsed.upgrades) || {}) },
+                ownedWeapons: { ...base.ownedWeapons, ...((parsed && parsed.ownedWeapons) || {}) },
+                unlockedSkills: { ...base.unlockedSkills, ...((parsed && parsed.unlockedSkills) || {}) },
+                codex: {
+                    unlocked: { ...base.codex.unlocked, ...((parsed && parsed.codex && parsed.codex.unlocked) || {}) },
+                    claimed: { ...base.codex.claimed, ...((parsed && parsed.codex && parsed.codex.claimed) || {}) }
+                },
+                questProgress: { ...base.questProgress, ...((parsed && parsed.questProgress) || {}) },
+                mine: { ...base.mine, ...((parsed && parsed.mine) || {}) },
+                bounty: { ...base.bounty, ...((parsed && parsed.bounty) || {}) }
+            };
+            if (!Array.isArray(merged.dolls) || merged.dolls.length !== 20) {
+                const arr = new Array(20).fill(null);
+                if (parsed && Array.isArray(parsed.dolls)) {
+                    parsed.dolls.slice(0, 20).forEach((v, i) => { arr[i] = v; });
+                }
+                merged.dolls = arr;
+            }
+            return merged;
+        }
+
+        function loadAccountState(playerId, playerName = '') {
+            const cleanId = sanitizePlayerId(playerId);
+            try {
+                const raw = localStorage.getItem(STORAGE_PREFIX + cleanId);
+                if (!raw) return createDefaultAccountState(cleanId, playerName);
+                return normalizeLoadedState(JSON.parse(raw), cleanId, playerName);
+            } catch (e) {
+                return createDefaultAccountState(cleanId, playerName);
+            }
+        }
+
+        // 每次重新載入頁面時皆建立空白臨時狀態，等待使用者於登入畫面登入個人帳號
+        let state = createDefaultAccountState(generatePlayerId(), '');
+        let isLoggedIn = false;
         let buyMultiplier = 1;
         let selectedDollIndex = null;
         let activeCodexCat = 'dolls';
@@ -787,9 +912,11 @@
         }
 
         function saveState() {
+            if (!isLoggedIn || !state || !state.playerId) return;
             try {
                 state.lastSaveTime = Date.now();
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                localStorage.setItem(STORAGE_PREFIX + state.playerId, JSON.stringify(state));
+                recordKnownAccount(state);
             } catch (e) {}
         }
 
@@ -985,6 +1112,7 @@
         }
 
         async function pushSaveToGoogleSheets() {
+            if (!isLoggedIn || !state.playerId) return;
             saveState();
             if (!GAS_EXEC_URL || isCloudSyncing) return;
 
@@ -1008,6 +1136,20 @@
             } finally {
                 isCloudSyncing = false;
             }
+        }
+
+        async function tryFetchCloudSave(playerId) {
+            if (!GAS_EXEC_URL) return null;
+            try {
+                const url = `${GAS_EXEC_URL}?playerId=${encodeURIComponent(playerId)}`;
+                const resp = await fetch(url, { method: 'GET' });
+                if (!resp.ok) return null;
+                const json = await resp.json();
+                if (json && json.ok && json.found && json.data && json.data.saveJson) {
+                    return JSON.parse(json.data.saveJson);
+                }
+            } catch (e) {}
+            return null;
         }
 
         /**
@@ -1441,6 +1583,7 @@
         let autoCloudSyncTimer = 0;
 
         function update(dt) {
+            if (!isLoggedIn) return;
             state.shiftSeconds += dt;
             const stats = getStats();
 
@@ -1675,583 +1818,91 @@
         }
 
         function render() {
+            if (!isLoggedIn) {
+                ctx.fillStyle = '#09070d';
+                ctx.fillRect(0, 0, cw, ch);
+                return;
+            }
             ctx.save();
             if (screenShake > 0) {
-                ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
-            }
-
-            const bgGrad = ctx.createLinearGradient(0, 0, 0, ch);
-            bgGrad.addColorStop(0, '#0d111a');
-            bgGrad.addColorStop(0.5, '#151b29');
-            bgGrad.addColorStop(1, '#0b0e14');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, cw, ch);
-
-            ctx.fillStyle = '#1b2233';
-            for (let x = 24; x < cw; x += 88) {
-                ctx.fillRect(x, 0, 18, ch);
-                const flicker = Math.sin(performance.now() * 0.015 + x) * 2;
-                ctx.fillStyle = '#f59e0b';
-                ctx.fillRect(x + 7, 72 + flicker, 4, 4);
-                ctx.fillStyle = '#1b2233';
-            }
-
-            if (blackHole) {
-                const pulse = Math.sin(performance.now() * 0.025) * 4;
-                ctx.beginPath();
-                ctx.arc(blackHole.x, blackHole.y, 34 + pulse, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(147, 51, 234, 0.35)';
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(blackHole.x, blackHole.y, 18, 0, Math.PI * 2);
-                ctx.fillStyle = '#09050f';
-                ctx.fill();
-                ctx.strokeStyle = '#e879f9';
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-            }
-
-            platforms.forEach(p => {
-                const w = p.x2 - p.x1;
-                ctx.fillStyle = '#2c3345';
-                ctx.fillRect(p.x1, p.y, w, 10);
-                ctx.fillStyle = '#475569';
-                ctx.fillRect(p.x1, p.y, w, 3);
-            });
-
-            acidZones.forEach(az => {
-                ctx.fillStyle = 'rgba(132, 204, 22, 0.45)';
-                ctx.fillRect(az.x, az.y - 6, az.width, 6);
-            });
-
-            monsters.forEach(m => drawPixelMonster(m));
-            if (boss) drawPixelBoss(boss);
-
-            shadowClones.forEach(sc => {
-                ctx.save();
-                ctx.globalAlpha = 0.65;
-                ctx.fillStyle = sc.color || '#6366f1';
-                ctx.fillRect(sc.x - 7, sc.y - 22, 14, 22);
-                ctx.restore();
-            });
-
-            drawPixelHero();
-
-            holyBeams.forEach(b => {
-                ctx.fillStyle = `rgba(253, 224, 71, ${0.4 * Math.min(1, b.life * 2)})`;
-                ctx.fillRect(b.x - b.width / 2, 0, b.width, ch);
-            });
-
-            lightnings.forEach(l => {
-                ctx.strokeStyle = '#e0f2fe';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(l.x1, l.y1);
-                for (let s = 1; s < 5; s++) {
-                    const t = s / 5;
-                    ctx.lineTo(l.x1 + (l.x2 - l.x1) * t + (Math.random() - 0.5) * 28, l.y1 + (l.y2 - l.y1) * t);
-                }
-                ctx.lineTo(l.x2, l.y2);
-                ctx.stroke();
-            });
-
-            icicles.forEach(ic => {
-                ctx.fillStyle = '#bae6fd';
-                ctx.beginPath();
-                ctx.moveTo(ic.x - 4, ic.y);
-                ctx.lineTo(ic.x + 4, ic.y);
-                ctx.lineTo(ic.x, ic.y + 16);
-                ctx.fill();
-            });
-
-            meteors.forEach(met => {
-                ctx.fillStyle = '#f97316';
-                ctx.beginPath();
-                ctx.arc(met.x, met.y, 12, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fef08a';
-                ctx.beginPath();
-                ctx.arc(met.x, met.y, 6, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            slashes.forEach(s => {
-                ctx.strokeStyle = '#d8b4fe';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, 22, s.dir > 0 ? -0.9 : Math.PI - 0.9, s.dir > 0 ? 0.9 : Math.PI + 0.9);
-                ctx.stroke();
-            });
-
-            drops.forEach(dr => {
-                ctx.fillStyle = '#fbbf24';
-                ctx.fillRect(dr.x - 3, dr.y - 3, 6, 6);
-            });
-
-            particles.forEach(p => {
-                ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, p.size, p.size);
-            });
-
-            damageNumbers.forEach(d => {
-                ctx.save();
-                const scale = d.isCrit ? 1.25 : 1.0;
-                ctx.font = `900 ${Math.floor(11 * scale)}px "Press Start 2P", monospace`;
-                ctx.textAlign = 'center';
-                ctx.fillStyle = '#09070d';
-                ctx.fillText(d.text, d.x - 1.5, d.y);
-                ctx.fillText(d.text, d.x + 1.5, d.y);
-                ctx.fillText(d.text, d.x, d.y - 1.5);
-                ctx.fillText(d.text, d.x, d.y + 1.5);
-                ctx.fillStyle = d.isCrit ? '#ff4d1c' : (d.color || '#facc15');
-                ctx.fillText(d.text, d.x, d.y);
-                ctx.restore();
-            });
-
-            ctx.restore();
+        function openLoginModal(prefillId = '', prefillName = '') {
+            isLoggedIn = false;
+            const idInput = document.getElementById('loginPlayerIdInput');
+            const nameInput = document.getElementById('loginPlayerNameInput');
+            idInput.value = prefillId ? sanitizePlayerId(prefillId) : generatePlayerId();
+            nameInput.value = prefillName || '';
+            renderKnownAccountsList();
+            document.getElementById('loginModal').classList.remove('hidden');
         }
 
-        function drawPixelMonster(m) {
-            const s = m.size;
-            const bounce = m.freezeTimer > 0 ? 0 : Math.abs(Math.sin(performance.now() * 0.008 + m.id * 10)) * 3;
-            const x = Math.floor(m.x - s / 2);
-            const y = Math.floor(m.y - s - bounce);
+        function renderKnownAccountsList() {
+            const listEl = document.getElementById('knownAccountsList');
+            const countEl = document.getElementById('knownAccountsCount');
+            const accounts = getKnownAccounts();
+            if (countEl) countEl.textContent = `${accounts.length} 個帳號`;
 
-            if (m.isBounty) {
-                ctx.strokeStyle = '#fbbf24';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x - 3, y - 3, s + 6, s + 6);
+            if (!accounts.length) {
+                listEl.innerHTML = `<div class="text-[11px] text-gray-500 text-center py-2">尚無歷史登入紀錄，請輸入新 ID 開始</div>`;
+                return;
             }
 
-            ctx.fillStyle = m.hitFlash > 0 ? '#ffffff' : (m.freezeTimer > 0 ? '#7dd3fc' : m.color);
-            ctx.fillRect(x, y, s, s);
-            ctx.fillStyle = m.hitFlash > 0 ? '#ffffff' : m.accent;
-            ctx.fillRect(x + 2, y + 2, s - 4, 4);
-
-            ctx.fillStyle = '#ef4444';
-            ctx.fillRect(x + 4, y + 7, 3, 3);
-            ctx.fillRect(x + s - 7, y + 7, 3, 3);
-
-            const hpPct = Math.max(0, m.hp / m.maxHp);
-            const barW = m.isBounty ? 32 : 22;
-            ctx.fillStyle = '#111827';
-            ctx.fillRect(m.x - barW / 2, y - 6, barW, 3);
-            ctx.fillStyle = m.isBounty ? '#fbbf24' : '#ef4444';
-            ctx.fillRect(m.x - barW / 2, y - 6, barW * hpPct, 3);
-        }
-
-        function drawPixelBoss(b) {
-            const s = 48;
-            const x = Math.floor(b.x - s / 2);
-            const y = Math.floor(b.y - s);
-            ctx.fillStyle = b.hitFlash > 0 ? '#ffffff' : '#451a03';
-            ctx.fillRect(x, y, s, s);
-            ctx.fillStyle = b.hitFlash > 0 ? '#ffffff' : '#ea580c';
-            ctx.fillRect(x + 4, y + 4, s - 8, s - 8);
-            ctx.fillStyle = '#facc15';
-            ctx.fillRect(x - 4, y - 8, 8, 12);
-            ctx.fillRect(x + s - 4, y - 8, 8, 12);
-            ctx.fillRect(x + 16, y + 18, 16, 12);
-        }
-
-        function drawPixelHero() {
-            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
-            const wStats = getEquippedWeaponStats();
-            const jumpOffset = hero.jumpAnim > 0 ? Math.sin((hero.jumpAnim / 0.25) * Math.PI) * 26 : 0;
-            const hx = Math.floor(hero.x);
-            const hy = Math.floor(hero.y - jumpOffset);
-
-            ctx.save();
-            ctx.translate(hx, hy);
-            ctx.scale(hero.dir, 1);
-
-            const capeWave = Math.sin(performance.now() * 0.015) * 2;
-            ctx.fillStyle = heroObj.capeColor;
-            ctx.fillRect(-11, -18 + capeWave, 7, 15);
-
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(-6, -20, 12, 20);
-            ctx.fillStyle = heroObj.color;
-            ctx.fillRect(-7, -23, 14, 8);
-
-            ctx.fillStyle = '#fed7aa';
-            ctx.fillRect(-3, -16, 8, 6);
-            ctx.fillStyle = heroObj.color;
-            ctx.fillRect(2, -14, 3, 2);
-
-            ctx.save();
-            ctx.translate(4, -10);
-            ctx.rotate(hero.swingAnim > 0 ? 1.15 : -0.35);
-            ctx.fillStyle = '#78350f';
-            ctx.fillRect(0, -2, 3, 5);
-            ctx.fillStyle = wStats.def.glowColor;
-            ctx.fillRect(-2, -3, 7, 2);
-            ctx.fillStyle = wStats.def.bladeColor;
-            if (wStats.def.id === 'w_pickaxe' || wStats.def.id === 'w_thunder_hammer') {
-                ctx.fillRect(0, -14, 3, 12);
-                ctx.fillRect(-4, -15, 11, 4);
-            } else if (wStats.def.id === 'w_holy_spear' || wStats.def.id === 'w_chaos_sword') {
-                ctx.fillRect(0, -20, 4, 18);
-                ctx.fillStyle = wStats.def.glowColor;
-                ctx.fillRect(1, -18, 2, 14);
-            } else {
-                ctx.fillRect(0, -15, 3, 13);
-            }
-            ctx.restore();
-
-            ctx.restore();
-        }
-
-        /**
-         * ==========================================
-         * 6. 分頁渲染與互動邏輯
-         * ==========================================
-         */
-        function renderEquippedSkillBar() {
-            const bar = document.getElementById('equippedSkillBar');
-            bar.innerHTML = state.equippedSkills.map((skId, slotIdx) => {
-                if (!skId) {
-                    return `
-                        <button class="rpg-btn w-10 h-10 rounded-lg flex flex-col items-center justify-center opacity-50 border-dashed" onclick="switchToTab('skills')">
-                            <span class="text-xs text-gray-500">+</span>
-                            <span class="text-[8px] text-gray-500">空槽</span>
-                        </button>
-                    `;
-                }
-                const def = SKILL_CATALOG.find(s => s.id === skId);
-                return `
-                    <button id="eqBtn_${slotIdx}" data-skill-id="${skId}" class="rpg-btn relative w-10 h-10 rounded-lg flex flex-col items-center justify-center overflow-hidden">
-                        <span class="text-sm leading-none">${def.icon}</span>
-                        <span class="text-[8px] font-bold ${def.color} mt-0.5 truncate w-full px-0.5 text-center">${def.name}</span>
-                        <div id="eqCd_${slotIdx}" class="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-mono font-bold text-white hidden">0s</div>
-                    </button>
-                `;
-            }).join('');
-
-            bar.querySelectorAll('button[data-skill-id]').forEach(btn => {
-                btn.addEventListener('click', () => triggerSkillById(btn.dataset.skillId, true));
-            });
-        }
-
-        function renderUpgradeList() {
-            const list = document.getElementById('upgradeList');
-            const stats = getStats();
-            updateCodexRedDot();
-            const items = [
-                { key: 'atk', name: '基礎攻擊力', icon: '⚔️', desc: `目前攻擊: ${formatNumber(stats.atk)}` },
-                { key: 'spd', name: '揮砍攻擊速度', icon: '⚡', desc: `攻擊間隔: ${stats.atkInterval.toFixed(2)}s` },
-                { key: 'critRate', name: '暴擊機率', icon: '🎯', desc: `目前機率: ${(stats.critRate * 100).toFixed(0)}%` },
-                { key: 'critDmg', name: '暴擊傷害倍率', icon: '💥', desc: `暴擊倍率: ${Math.round(stats.critDmg * 100)}%` },
-                { key: 'goldGain', name: '加班費加成 (金幣)', icon: '💰', desc: `金幣倍率: ${Math.round(stats.goldMult * 100)}%` }
-            ];
-
-            list.innerHTML = items.map(item => {
-                const lvl = state.upgrades[item.key];
-                const cost = getMultiUpgradeCost(item.key, lvl, buyMultiplier);
-                const canAfford = state.gold >= cost;
-                return `
-                    <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-2 flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <div class="w-8 h-8 rounded bg-[#15121c] border border-[#4c4163] flex items-center justify-center text-base shrink-0">${item.icon}</div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-xs font-bold text-gray-100 truncate">${item.name}</span>
-                                    <span class="text-[10px] text-amber-400 font-mono">Lv.${lvl}</span>
-                                </div>
-                                <div class="text-[10px] text-gray-400 truncate">${item.desc}</div>
-                            </div>
-                        </div>
-                        <button class="upg-buy-btn rpg-btn rpg-btn-gold px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0 flex flex-col items-end"
-                                data-key="${item.key}" data-cost="${cost}" ${!canAfford ? 'disabled' : ''}>
-                            <span>強化 +${buyMultiplier}</span>
-                            <span class="text-[9px] font-mono">🪙 ${formatNumber(cost)}</span>
-                        </button>
+            listEl.innerHTML = accounts.map(acc => `
+                <button type="button" class="quick-login-btn w-full bg-[#1e1829] hover:bg-[#2b223b] border border-[#443859] rounded-lg px-2.5 py-2 flex items-center justify-between gap-2 text-left transition cursor-pointer"
+                        data-pid="${acc.playerId}" data-pname="${acc.playerName}">
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-amber-300 truncate">${acc.playerName}</div>
+                        <div class="text-[10px] font-mono text-cyan-300 truncate">${acc.playerId}</div>
                     </div>
-                `;
-            }).join('');
+                    <div class="text-right shrink-0">
+                        <div class="text-[10px] font-mono text-purple-300">B${acc.maxFloor || 1}F</div>
+                        <div class="text-[9px] text-gray-400">Lv.${acc.heroLevel || 1}</div>
+                    </div>
+                </button>
+            `).join('');
 
-            list.querySelectorAll('.upg-buy-btn').forEach(btn => {
+            listEl.querySelectorAll('.quick-login-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const key = btn.dataset.key;
-                    const cost = Number(btn.dataset.cost);
-                    if (state.gold >= cost) {
-                        state.gold -= cost;
-                        state.upgrades[key] += buyMultiplier;
-                        state.totalUpgrades += buyMultiplier;
-                        audio.playCoin();
-                        renderUpgradeList();
-                        syncTopAndBattleUI();
-                        saveState();
-                    }
+                    loginWithAccount(btn.dataset.pid, btn.dataset.pname);
                 });
             });
         }
 
-        function forgeWeapon(useCrystal = false) {
-            if (useCrystal) {
-                if (state.crystals < 15) {
-                    showToast('💠 技能結晶不足 (需 15 結晶)');
-                    return;
-                }
-                state.crystals -= 15;
-            } else {
-                const cost = getForgeGoldCost();
-                if (state.gold < cost) {
-                    showToast('🪙 金幣不足！');
-                    return;
-                }
-                state.gold -= cost;
-                state.weaponForgeCount++;
-            }
+        async function loginWithAccount(rawId, rawName) {
+            const cleanId = sanitizePlayerId(rawId);
+            const enteredName = String(rawName || '').trim();
+            let loaded = loadAccountState(cleanId, enteredName);
 
-            const pool = useCrystal ? WEAPON_CATALOG.filter(w => w.rarity !== 'common') : WEAPON_CATALOG;
-            const totalWeight = pool.reduce((sum, w) => sum + w.weight, 0);
-            let roll = Math.random() * totalWeight;
-            let chosen = pool[0];
-            for (const w of pool) {
-                roll -= w.weight;
-                if (roll <= 0) { chosen = w; break; }
-            }
-
-            if (!state.ownedWeapons[chosen.id]) {
-                state.ownedWeapons[chosen.id] = { level: 1, stars: 1, shards: 0 };
-                unlockCodexEntry('weapons', chosen.id);
-                showToast(`🎉 鍛造出全新神兵【${chosen.name}】！`);
-            } else {
-                state.ownedWeapons[chosen.id].shards++;
-                const needShards = state.ownedWeapons[chosen.id].stars * 2;
-                if (state.ownedWeapons[chosen.id].shards >= needShards) {
-                    state.ownedWeapons[chosen.id].shards -= needShards;
-                    state.ownedWeapons[chosen.id].stars++;
-                    showToast(`⭐ 【${chosen.name}】升星突破至 ${state.ownedWeapons[chosen.id].stars} 星！`);
-                } else {
-                    showToast(`🔨 獲得【${chosen.name}】碎片 (${state.ownedWeapons[chosen.id].shards}/${needShards})`);
+            const cloudData = await tryFetchCloudSave(cleanId);
+            if (cloudData) {
+                const localSaveTime = loaded.lastSaveTime || 0;
+                const cloudSaveTime = cloudData.lastSaveTime || 0;
+                if (cloudSaveTime >= localSaveTime) {
+                    loaded = normalizeLoadedState(cloudData, cleanId, enteredName || cloudData.playerName);
                 }
             }
 
-            audio.playForge();
-            renderWeaponList();
-            syncTopAndBattleUI();
+            if (enteredName) {
+                loaded.playerName = enteredName;
+            }
+
+            state = loaded;
+            skillTimers = {};
+            selectedDollIndex = null;
+            boss = null;
+            defenseMode = null;
+            monsters = [];
+            for (let i = 0; i < 8; i++) spawnMonster();
+
+            isLoggedIn = true;
+            recordKnownAccount(state);
             saveState();
-            if (state.autoCloudSync) pushSaveToGoogleSheets();
-        }
+            document.getElementById('loginModal').classList.add('hidden');
+            refreshAllUI();
+            checkOfflineEarnings();
+            showToast(`👋 歡迎打卡上班，${state.playerName} (${state.playerId})！`);
 
-        function renderWeaponList() {
-            document.getElementById('forgeGoldCost').textContent = formatNumber(getForgeGoldCost());
-            const list = document.getElementById('weaponList');
-
-            list.innerHTML = WEAPON_CATALOG.map(w => {
-                const owned = state.ownedWeapons[w.id];
-                const isEquipped = state.equippedWeapon === w.id;
-                const upgCost = owned ? Math.floor(200 * Math.pow(1.38, owned.level - 1)) : 0;
-                const atkBonusPct = owned
-                    ? Math.round(w.baseAtkPct * (1 + (owned.level - 1) * 0.18) * (1 + (owned.stars - 1) * 0.35) * 100)
-                    : Math.round(w.baseAtkPct * 100);
-
-                return `
-                    <div class="bg-[#211c2b] border-2 ${isEquipped ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col justify-between gap-1.5 ${!owned ? 'opacity-55' : ''}">
-                        <div>
-                            <div class="flex items-center justify-between gap-1">
-                                <div class="flex items-center gap-1 min-w-0">
-                                    <span class="text-lg">${w.icon}</span>
-                                    <span class="text-[11px] font-bold rarity-${w.rarity} truncate">${w.name}</span>
-                                </div>
-                                ${owned ? `<span class="text-[9px] text-amber-300 font-mono shrink-0">Lv.${owned.level} ★${owned.stars}</span>` : `<span class="text-[9px] text-gray-500">未獲得</span>`}
-                            </div>
-                            <div class="text-[10px] text-emerald-300 mt-1">攻擊 +${atkBonusPct}% | 暴擊 +${Math.round(w.critRate * 100)}%</div>
-                        </div>
-
-                        ${owned ? `
-                            <div class="flex gap-1 mt-1">
-                                <button class="eq-wep-btn rpg-btn ${isEquipped ? 'rpg-btn-gold' : ''} flex-1 py-1 rounded text-[10px] font-bold" data-id="${w.id}">
-                                    ${isEquipped ? '裝備中' : '裝備'}
-                                </button>
-                                <button class="upg-wep-btn rpg-btn flex-1 py-1 rounded text-[10px] font-bold text-cyan-300" data-id="${w.id}" data-cost="${upgCost}" ${state.gold < upgCost ? 'disabled' : ''}>
-                                    強化 🪙${formatNumber(upgCost)}
-                                </button>
-                            </div>
-                        ` : `<div class="text-[9px] text-center py-1 bg-black/40 rounded text-gray-500">透過矮人鍛造爐取得</div>`}
-                    </div>
-                `;
-            }).join('');
-
-            list.querySelectorAll('.eq-wep-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    state.equippedWeapon = btn.dataset.id;
-                    audio.playCoin();
-                    renderWeaponList();
-                    syncTopAndBattleUI();
-                    saveState();
-                });
-            });
-
-            list.querySelectorAll('.upg-wep-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    const cost = Number(btn.dataset.cost);
-                    if (state.gold >= cost && state.ownedWeapons[id]) {
-                        state.gold -= cost;
-                        state.ownedWeapons[id].level++;
-                        audio.playMerge();
-                        renderWeaponList();
-                        syncTopAndBattleUI();
-                        saveState();
-                    }
-                });
-            });
-        }
-
-        function renderSkillCodex() {
-            const preview = document.getElementById('equippedSlotsPreview');
-            preview.innerHTML = state.equippedSkills.map((skId, idx) => {
-                const def = SKILL_CATALOG.find(s => s.id === skId);
-                return `
-                    <div class="bg-[#15121c] border ${def ? 'border-cyan-400/70' : 'border-dashed border-gray-600'} rounded-lg p-1.5 flex flex-col items-center justify-center text-center">
-                        <span class="text-[9px] text-gray-400">槽位 ${idx + 1}</span>
-                        <span class="text-base my-0.5">${def ? def.icon : '➕'}</span>
-                        <span class="text-[9px] font-bold ${def ? def.color : 'text-gray-500'} truncate w-full">${def ? def.name : '未裝備'}</span>
-                    </div>
-                `;
-            }).join('');
-
-            const list = document.getElementById('skillCodexList');
-            list.innerHTML = SKILL_CATALOG.map(sk => {
-                const lvl = state.unlockedSkills[sk.id] || 0;
-                const isUnlocked = lvl > 0;
-                const isEquipped = state.equippedSkills.includes(sk.id);
-                const upgCost = Math.floor(140 * Math.pow(1.42, Math.max(0, lvl - 1)));
-                const powerPct = Math.round(sk.mult * (1 + Math.max(0, lvl - 1) * 0.35) * 100);
-
-                return `
-                    <div class="bg-[#211c2b] border ${isEquipped ? 'border-cyan-400/80' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col gap-1">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-xl">${sk.icon}</span>
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-xs font-bold ${sk.color}">${sk.name}</span>
-                                        ${isUnlocked ? `<span class="text-[10px] font-mono text-amber-300">Lv.${lvl}</span>` : `<span class="text-[9px] px-1 rounded bg-gray-800 text-gray-400">未解鎖</span>`}
-                                    </div>
-                                    <div class="text-[10px] text-gray-400 truncate">${sk.desc}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between pt-1 border-t border-gray-800/80">
-                            <span class="text-[10px] text-gray-400">威力: <b class="text-amber-300">${powerPct}%</b> | 冷卻: ${sk.cd}s</span>
-                            <div class="flex gap-1">
-                                ${isUnlocked ? `
-                                    <button class="equip-sk-btn rpg-btn px-2 py-0.5 rounded text-[10px] font-bold ${isEquipped ? 'text-gray-400' : 'text-cyan-300'}" data-id="${sk.id}">${isEquipped ? '卸下' : '裝備'}</button>
-                                    <button class="upg-sk-btn rpg-btn rpg-btn-gold px-2 py-0.5 rounded text-[10px] font-bold" data-id="${sk.id}" data-cost="${upgCost}" ${state.gold < upgCost ? 'disabled' : ''}>升級 🪙${formatNumber(upgCost)}</button>
-                                ` : `
-                                    <button class="unlock-sk-btn rpg-btn rpg-btn-gold px-2.5 py-0.5 rounded text-[10px] font-bold" data-id="${sk.id}" data-crystal="${sk.unlockCrystal}" ${state.crystals < sk.unlockCrystal ? 'disabled' : ''}>💠 ${sk.unlockCrystal} 解鎖</button>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            list.querySelectorAll('.unlock-sk-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    const cost = Number(btn.dataset.crystal);
-                    if (state.crystals >= cost) {
-                        state.crystals -= cost;
-                        state.unlockedSkills[id] = 1;
-                        unlockCodexEntry('skills', id);
-                        const emptySlot = state.equippedSkills.findIndex(s => s === null);
-                        if (emptySlot !== -1) state.equippedSkills[emptySlot] = id;
-                        audio.playLevelUp();
-                        renderEquippedSkillBar();
-                        renderSkillCodex();
-                        syncTopAndBattleUI();
-                        saveState();
-                    }
-                });
-            });
-
-            list.querySelectorAll('.upg-sk-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    const cost = Number(btn.dataset.cost);
-                    if (state.gold >= cost) {
-                        state.gold -= cost;
-                        state.unlockedSkills[id]++;
-                        audio.playMerge();
-                        renderSkillCodex();
-                        syncTopAndBattleUI();
-                        saveState();
-                    }
-                });
-            });
-
-            list.querySelectorAll('.equip-sk-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    const existingIdx = state.equippedSkills.indexOf(id);
-                    if (existingIdx !== -1) state.equippedSkills[existingIdx] = null;
-                    else {
-                        const emptyIdx = state.equippedSkills.findIndex(s => s === null);
-                        if (emptyIdx !== -1) state.equippedSkills[emptyIdx] = id;
-                        else state.equippedSkills[3] = id;
-                    }
-                    audio.playCoin();
-                    renderEquippedSkillBar();
-                    renderSkillCodex();
-                    saveState();
-                });
-            });
-        }
-
-        function renderDollGrid() {
-            const grid = document.getElementById('dollGrid');
-            document.getElementById('summonDollCost').textContent = `🪙${formatNumber(getSummonDollCost())}`;
-            document.getElementById('dollTabBonus').textContent = `+${formatNumber(Math.round(getDollTotalBonus() * 100))}%`;
-
-            grid.innerHTML = state.dolls.map((tier, idx) => {
-                if (!tier) {
-                    return `<div class="doll-slot flex items-center justify-center text-gray-700 text-[9px]" data-idx="${idx}">·</div>`;
-                }
-                const info = DOLL_TIERS.find(d => d.tier === tier) || DOLL_TIERS[DOLL_TIERS.length - 1];
-                const isSelected = selectedDollIndex === idx;
-                return `
-                    <div class="doll-slot has-doll ${isSelected ? 'selected' : ''} flex flex-col items-center justify-center p-0.5"
-                         draggable="true" data-idx="${idx}">
-                        <span class="text-[8px] font-black px-1 rounded bg-black/70 text-amber-300 absolute top-0.5 left-0.5">T${info.tier}</span>
-                        <span class="text-lg sm:text-xl leading-none mt-1">${info.icon}</span>
-                        <span class="text-[8px] font-bold text-gray-200 truncate w-full text-center mt-0.5">${info.name}</span>
-                    </div>
-                `;
-            }).join('');
-
-            grid.querySelectorAll('.doll-slot').forEach(slot => {
-                const idx = Number(slot.dataset.idx);
-                slot.addEventListener('click', () => handleDollSlotClick(idx));
-                slot.addEventListener('dragstart', e => {
-                    if (state.dolls[idx] !== null) {
-                        e.dataTransfer.setData('text/plain', idx.toString());
-                        selectedDollIndex = idx;
-                    }
-                });
-                slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
-                slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
-                slot.addEventListener('drop', e => {
-                    e.preventDefault();
-                    slot.classList.remove('drag-over');
-                    const fromIdx = Number(e.dataTransfer.getData('text/plain'));
-                    if (!isNaN(fromIdx) && fromIdx !== idx) mergeOrSwapDolls(fromIdx, idx);
-                });
-            });
-        }
-
-        function handleDollSlotClick(idx) {
-            if (selectedDollIndex === null) {
-                if (state.dolls[idx] !== null) { selectedDollIndex = idx; renderDollGrid(); }
-            } else if (selectedDollIndex === idx) {
-                selectedDollIndex = null;
-                renderDollGrid();
-            } else {
-                mergeOrSwapDolls(selectedDollIndex, idx);
+            if (state.autoCloudSync) {
+                pushSaveToGoogleSheets();
             }
         }
 
@@ -2921,6 +2572,22 @@
             });
 
             document.getElementById('openProfileBtn').addEventListener('click', openProfileModal);
+            document.getElementById('openLoginTopBtn').addEventListener('click', () => {
+                document.getElementById('profileCloudModal').classList.add('hidden');
+                openLoginModal(state.playerId, state.playerName);
+            });
+            document.getElementById('switchAccountFromProfileBtn').addEventListener('click', () => {
+                document.getElementById('profileCloudModal').classList.add('hidden');
+                openLoginModal('', '');
+            });
+            document.getElementById('loginGenIdBtn').addEventListener('click', () => {
+                document.getElementById('loginPlayerIdInput').value = generatePlayerId();
+            });
+            document.getElementById('confirmLoginBtn').addEventListener('click', () => {
+                const pid = document.getElementById('loginPlayerIdInput').value;
+                const pname = document.getElementById('loginPlayerNameInput').value;
+                loginWithAccount(pid, pname);
+            });
             document.getElementById('closeProfileModalBtn').addEventListener('click', () => {
                 document.getElementById('profileCloudModal').classList.add('hidden');
             });
@@ -2930,10 +2597,16 @@
             });
 
             document.getElementById('saveProfileIdentityBtn').addEventListener('click', () => {
-                const newId = document.getElementById('inputPlayerId').value.trim();
+                const oldKey = STORAGE_PREFIX + state.playerId;
+                const newId = sanitizePlayerId(document.getElementById('inputPlayerId').value);
                 const newName = document.getElementById('inputPlayerName').value.trim();
-                if (newId) state.playerId = newId;
+                state.playerId = newId;
                 if (newName) state.playerName = newName;
+                try {
+                    if (oldKey !== STORAGE_PREFIX + state.playerId) {
+                        localStorage.removeItem(oldKey);
+                    }
+                } catch (e) {}
                 saveState();
                 syncTopAndBattleUI();
                 showToast(`✅ 已更新玩家識別：${state.playerName} (${state.playerId})`);
@@ -2954,15 +2627,9 @@
             hero.x = cw * 0.3;
             hero.y = platforms[1].y;
 
-            for (let i = 0; i < 8; i++) spawnMonster();
-
             bindEvents();
             refreshAllUI();
-            checkOfflineEarnings();
-
-            if (state.autoCloudSync) {
-                setTimeout(() => pushSaveToGoogleSheets(), 1200);
-            }
+            openLoginModal('', '');
 
             lastTime = performance.now();
             requestAnimationFrame(gameLoop);
