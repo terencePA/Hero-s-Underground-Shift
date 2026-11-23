@@ -139,17 +139,13 @@
     </style>
 </head>
 <body>
-    <!-- 主遊戲容器 -->
-    <div id="app" class="relative w-full max-w-[500px] h-full max-h-[960px] flex flex-col bg-[#120f17] sm:border-x-2 sm:border-[#342d40] shadow-2xl overflow-hidden">
-
-        <!-- 頂部狀態列：玩家 ID / 名稱、金幣、結晶、背景自動同步狀態 -->
-        <header class="flex-none px-2 py-1.5 bg-[#1a1622] border-b-2 border-[#383047] flex items-center justify-between gap-1 z-20">
-            <button id="openProfileBtn" class="flex items-center gap-1.5 min-w-0 bg-[#231d2e] hover:bg-[#2d253b] border border-purple-500/40 rounded-lg px-2 py-1 text-left transition shrink">
-                <div class="w-7 h-7 rounded-md bg-[#14111c] border border-amber-400/70 flex items-center justify-center text-sm shrink-0" id="headerHeroIcon">
-                    ⚡
-                </div>
+    <div id="appShell" class="relative w-full max-w-[520px] h-[100dvh] bg-[#16131d] border-x border-[#3b324b] flex flex-col overflow-hidden shadow-2xl">
+        <!-- 頂部員工資訊與資源列 -->
+        <header class="flex-none bg-[#1c1726] border-b-2 border-[#463c57] px-2.5 py-1.5 flex items-center justify-between gap-2 z-20">
+            <button id="openProfileBtn" type="button" class="flex items-center gap-2 min-w-0 text-left hover:opacity-90 transition cursor-pointer">
                 <div class="min-w-0">
                     <div class="flex items-center gap-1">
+                        <span id="headerHeroIcon" class="text-sm leading-none">⚡</span>
                         <span id="playerNameDisplay" class="font-bold text-xs text-amber-300 truncate max-w-[82px]">Terence</span>
                         <span class="text-[9px] text-gray-400">✏️</span>
                     </div>
@@ -170,8 +166,41 @@
                     <span>☁️</span>
                     <span id="syncStatusIcon" class="text-[9px]">自動</span>
                 </div>
-                <button id="muteBtn" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
+                <button id="openLoginTopBtn" type="button" class="rpg-btn px-1.5 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-cyan-300" title="切換帳號／登入">
+                    🔑
+                </button>
+                <button id="muteBtn" type="button" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
                     🔊
+                </button>
+            </div>
+        </header>
+
+        <!-- 上半部：三層地下城戰鬥畫布 -->
+        <div id="canvasWrapper" class="relative flex-1 min-h-[250px] bg-[#0d1017] overflow-hidden">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- 頂部懸浮資訊列：樓層進度、快捷支線追蹤、首領按鈕 -->
+            <div class="absolute top-2 left-2 right-2 flex items-center justify-between gap-1.5 pointer-events-none">
+                <div class="bg-black/80 backdrop-blur-xs border border-purple-500/40 rounded-lg px-2 py-1 flex items-center gap-1.5 pointer-events-auto shrink-0">
+                    <span class="text-[11px] font-black text-purple-300 pixel-font" id="floorDisplay">B1F</span>
+                    <div class="w-10 sm:w-14 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+                        <div id="waveProgressBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                    <span id="waveText" class="text-[10px] text-gray-300 font-mono">0/10</span>
+                </div>
+
+                <button id="questTrackerBtn" type="button" class="pointer-events-auto flex-1 min-w-0 bg-black/80 hover:bg-black/95 border border-cyan-500/50 rounded-lg px-2 py-1 flex items-center justify-between gap-1 text-left transition">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[9px] text-cyan-300 font-bold truncate" id="trackerTitle">📋 委託：清理地下城夜班怪物</div>
+                        <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-0.5">
+                            <div id="trackerBar" class="h-full bg-cyan-400 transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span id="trackerStatus" class="text-[9px] font-mono font-bold text-gray-300 shrink-0">0/20</span>
+                </button>
+
+                <button id="bossBtn" type="button" class="pointer-events-auto rpg-btn rpg-btn-red px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0">
+                    <span>👹</span><span id="bossBtnText">首領</span>
                 </button>
             </div>
         </header>
@@ -854,6 +883,214 @@
             }
         }
 
+        function formatNumber(num) {
+            const n = Number(num) || 0;
+            if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+            if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return Math.floor(n).toLocaleString('en-US');
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            const box = document.getElementById('toastBox');
+            if (!box) return;
+            box.textContent = msg;
+            box.classList.remove('opacity-0');
+            box.classList.add('opacity-100');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.remove('opacity-100');
+                box.classList.add('opacity-0');
+            }, 2200);
+        }
+
+        function getRequiredExp(level) {
+            return Math.floor(80 * Math.pow(1.22, Math.max(0, level - 1)));
+        }
+
+        function getEquippedWeaponStats() {
+            const def = WEAPON_CATALOG.find(w => w.id === state.equippedWeapon) || WEAPON_CATALOG[0];
+            const own = state.ownedWeapons[def.id] || { level: 1, stars: 1, shards: 0 };
+            const lvlMult = 1 + (own.level - 1) * 0.14;
+            const starMult = 1 + (own.stars - 1) * 0.25;
+            return {
+                def,
+                own,
+                atkBonusPct: def.baseAtkPct * lvlMult * starMult,
+                critRateBonus: def.critRate * starMult,
+                critDmgBonus: def.critDmg * starMult
+            };
+        }
+
+        function getDollTotalBonus() {
+            let total = 0;
+            state.dolls.forEach(tier => {
+                if (!tier) return;
+                const d = DOLL_TIERS.find(item => item.tier === tier);
+                if (d) total += d.bonus;
+            });
+            return total;
+        }
+
+        function getAllCodexEntries() {
+            return {
+                dolls: DOLL_TIERS.map(d => ({
+                    id: String(d.tier),
+                    name: `T${d.tier} ${d.name}`,
+                    icon: d.icon,
+                    desc: `提供全隊 +${Math.round(d.bonus * 100)}% 攻擊加成`,
+                    rewardCrystal: 5 + d.tier * 2
+                })),
+                weapons: WEAPON_CATALOG.map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    icon: w.icon,
+                    desc: `${w.rarityName}武器 | 基礎攻擊 +${Math.round(w.baseAtkPct * 100)}%`,
+                    rewardCrystal: 8
+                })),
+                monsters: [
+                    ...MONSTER_TYPES.map(m => ({
+                        id: m.id,
+                        name: m.name,
+                        icon: m.icon,
+                        desc: m.desc,
+                        rewardCrystal: 5
+                    })),
+                    ...BOUNTY_TEMPLATES.map(b => ({
+                        id: b.id,
+                        name: b.prefix + b.name,
+                        icon: b.icon,
+                        desc: b.desc,
+                        rewardCrystal: 10
+                    })),
+                    ...BOSS_CATALOG.map(bs => ({
+                        id: bs.id,
+                        name: bs.name,
+                        icon: bs.icon,
+                        desc: bs.desc,
+                        rewardCrystal: 12
+                    }))
+                ],
+                skills: SKILL_CATALOG.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    icon: s.icon,
+                    desc: `技能倍率 ${s.mult}x | 冷卻 ${s.cd}s`,
+                    rewardCrystal: 8
+                })),
+                heroes: HERO_DATA.map(h => ({
+                    id: h.id,
+                    name: `${h.name} (${h.title})`,
+                    icon: h.icon,
+                    desc: h.bonusText,
+                    rewardCrystal: 10
+                }))
+            };
+        }
+
+        function getCodexStats() {
+            const entries = getAllCodexEntries();
+            let total = 0;
+            let unlockedCount = 0;
+            let claimedCount = 0;
+
+            Object.keys(entries).forEach(cat => {
+                entries[cat].forEach(item => {
+                    total++;
+                    const key = `${cat}:${item.id}`;
+                    if (state.codex && state.codex.unlocked && state.codex.unlocked[key]) {
+                        unlockedCount++;
+                    }
+                    if (state.codex && state.codex.claimed && state.codex.claimed[key]) {
+                        claimedCount++;
+                    }
+                });
+            });
+
+            const atkBonus = unlockedCount * 0.03 + claimedCount * 0.02;
+            const goldBonus = unlockedCount * 0.025 + claimedCount * 0.015;
+            return { total, unlockedCount, claimedCount, atkBonus, goldBonus };
+        }
+
+        function updateCodexRedDot() {
+            const dot = document.getElementById('codexRedDot');
+            if (!dot) return;
+            const entries = getAllCodexEntries();
+            let hasUnclaimed = false;
+            Object.keys(entries).forEach(cat => {
+                entries[cat].forEach(item => {
+                    const key = `${cat}:${item.id}`;
+                    if (state.codex.unlocked[key] && !state.codex.claimed[key]) {
+                        hasUnclaimed = true;
+                    }
+                });
+            });
+            if (hasUnclaimed) dot.classList.remove('hidden');
+            else dot.classList.add('hidden');
+        }
+
+        function unlockCodexEntry(category, id) {
+            if (!state.codex) state.codex = { unlocked: {}, claimed: {} };
+            const key = `${category}:${id}`;
+            if (!state.codex.unlocked[key]) {
+                state.codex.unlocked[key] = true;
+                updateCodexRedDot();
+            }
+        }
+
+        function addQuestProgress(questId, amount = 1) {
+            if (!state.questProgress || !state.questProgress[questId]) return;
+            state.questProgress[questId].count += amount;
+            updateQuestTrackerUI();
+        }
+
+        function getStats() {
+            const heroDef = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const wStats = getEquippedWeaponStats();
+            const dollBonus = getDollTotalBonus();
+            const cStats = getCodexStats();
+
+            const baseAtk = 14 + (state.heroLevel - 1) * 5 + ((state.upgrades.atk || 1) - 1) * 7;
+            const totalMult = (heroDef.atkMult || 1) * (1 + dollBonus + wStats.atkBonusPct + cStats.atkBonus);
+            const atk = Math.max(1, Math.floor(baseAtk * totalMult));
+
+            const spdLvl = state.upgrades.spd || 1;
+            const atkInterval = Math.max(0.24, 0.72 * Math.pow(0.96, spdLvl - 1));
+
+            const critRate = Math.min(0.95, 0.10 + ((state.upgrades.critRate || 1) - 1) * 0.015 + wStats.critRateBonus);
+            const critDmg = 1.6 + ((state.upgrades.critDmg || 1) - 1) * 0.08 + wStats.critDmgBonus + (state.activeHero === 'terence' ? 0.50 : 0);
+            const goldMult = (1 + ((state.upgrades.goldGain || 1) - 1) * 0.12) * (1 + cStats.goldBonus);
+            const skillPowerMult = state.activeHero === 'zeus' ? 1.25 : 1.0;
+
+            return { atk, atkInterval, critRate, critDmg, goldMult, skillPowerMult, wStats, cStats };
+        }
+
+        function getSingleUpgradeCost(key, level) {
+            const baseMap = { atk: 60, spd: 90, critRate: 110, critDmg: 100, goldGain: 80 };
+            const growthMap = { atk: 1.22, spd: 1.26, critRate: 1.28, critDmg: 1.25, goldGain: 1.24 };
+            const base = baseMap[key] || 80;
+            const growth = growthMap[key] || 1.24;
+            return Math.floor(base * Math.pow(growth, Math.max(0, level - 1)));
+        }
+
+        function getMultiUpgradeCost(key, currentLevel, count = 1) {
+            let sum = 0;
+            for (let i = 0; i < count; i++) {
+                sum += getSingleUpgradeCost(key, currentLevel + i);
+            }
+            return sum;
+        }
+
+        function getSummonDollCost() {
+            return Math.floor(100 * Math.pow(1.16, state.dollSummonCount || 0));
+        }
+
+        function getForgeGoldCost() {
+            return Math.floor(500 * Math.pow(1.25, state.weaponForgeCount || 0));
+        }
+
         // 每次重新載入頁面時皆建立空白臨時狀態，等待使用者於登入畫面登入個人帳號
         let state = createDefaultAccountState(generatePlayerId(), '');
         let isLoggedIn = false;
@@ -863,225 +1100,29 @@
         let skillTimers = {};
         let isCloudSyncing = false;
 
-        /**
-         * ==========================================
-         * 3. 存檔、圖鑑與數值計算引擎
-         * ==========================================
-         */
-        function formatNumber(num) {
-            if (num < 1000) return Math.floor(num).toString();
-            const units = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi'];
-            const tier = Math.floor(Math.log10(num) / 3);
-            if (tier >= units.length) return num.toExponential(2);
-            const scale = Math.pow(10, tier * 3);
-            const scaled = num / scale;
-            return scaled.toFixed(scaled < 10 ? 2 : 1) + units[tier];
-        }
-
-        function loadState() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
-                const parsed = JSON.parse(raw);
-                const merged = {
-                    ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
-                    ...parsed,
-                    autoCloudSync: true,
-                    upgrades: { ...DEFAULT_STATE.upgrades, ...(parsed.upgrades || {}) },
-                    ownedWeapons: { ...DEFAULT_STATE.ownedWeapons, ...(parsed.ownedWeapons || {}) },
-                    unlockedSkills: { ...DEFAULT_STATE.unlockedSkills, ...(parsed.unlockedSkills || {}) },
-                    codex: {
-                        unlocked: { ...DEFAULT_STATE.codex.unlocked, ...((parsed.codex && parsed.codex.unlocked) || {}) },
-                        claimed: { ...((parsed.codex && parsed.codex.claimed) || {}) }
-                    },
-                    questProgress: { ...DEFAULT_STATE.questProgress, ...(parsed.questProgress || {}) },
-                    mine: { ...DEFAULT_STATE.mine, ...(parsed.mine || {}) },
-                    bounty: { ...DEFAULT_STATE.bounty, ...(parsed.bounty || {}) }
-                };
-                if (!Array.isArray(merged.dolls) || merged.dolls.length !== 20) {
-                    const arr = new Array(20).fill(null);
-                    if (Array.isArray(merged.dolls)) {
-                        merged.dolls.slice(0, 20).forEach((v, i) => { arr[i] = v; });
-                    }
-                    merged.dolls = arr;
-                }
-                return merged;
-            } catch (e) {
-                return JSON.parse(JSON.stringify(DEFAULT_STATE));
-            }
-        }
-
         function saveState() {
-            if (!isLoggedIn || !state || !state.playerId) return;
+            if (!state || !state.playerId) return;
+            state.lastSaveTime = Date.now();
             try {
-                state.lastSaveTime = Date.now();
                 localStorage.setItem(STORAGE_PREFIX + state.playerId, JSON.stringify(state));
                 recordKnownAccount(state);
             } catch (e) {}
         }
 
-        function showToast(msg) {
-            const toast = document.getElementById('toastBox');
-            toast.textContent = msg;
-            toast.style.opacity = '1';
-            clearTimeout(toast._timer);
-            toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2200);
-        }
-
-        function unlockCodexEntry(category, itemId) {
-            const key = `${category}:${itemId}`;
-            if (!state.codex.unlocked[key]) {
-                state.codex.unlocked[key] = true;
-                updateCodexRedDot();
+        function safeOn(elementId, eventName, handler) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.addEventListener(eventName, handler);
             }
+            return el;
         }
 
-        function getAllCodexEntries() {
-            return {
-                dolls: DOLL_TIERS.map(d => ({
-                    id: String(d.tier),
-                    name: `T${d.tier} ${d.name}`,
-                    icon: d.icon,
-                    desc: `玩偶提供 +${Math.round(d.bonus * 100)}% 全隊加成`,
-                    rewardCrystal: 5 + d.tier * 2
-                })),
-                weapons: WEAPON_CATALOG.map(w => ({
-                    id: w.id,
-                    name: w.name,
-                    icon: w.icon,
-                    desc: `${w.rarityName}神兵 | 基礎攻擊 +${Math.round(w.baseAtkPct * 100)}%`,
-                    rewardCrystal: 10
-                })),
-                monsters: [
-                    ...MONSTER_TYPES.map(m => ({ id: m.id, name: m.name, icon: m.icon, desc: m.desc, rewardCrystal: 6 })),
-                    ...BOUNTY_TEMPLATES.map(b => ({ id: b.id, name: b.name, icon: b.icon, desc: b.desc, rewardCrystal: 15 })),
-                    ...BOSS_CATALOG.map(bs => ({ id: bs.id, name: bs.name, icon: bs.icon, desc: bs.desc, rewardCrystal: 18 }))
-                ],
-                skills: SKILL_CATALOG.map(s => ({
-                    id: s.id,
-                    name: s.name,
-                    icon: s.icon,
-                    desc: s.desc,
-                    rewardCrystal: 10
-                })),
-                heroes: HERO_DATA.map(h => ({
-                    id: h.id,
-                    name: h.name,
-                    icon: h.icon,
-                    desc: `${h.title} | ${h.bonusText}`,
-                    rewardCrystal: 20
-                }))
-            };
-        }
-
-        function getCodexStats() {
-            const all = getAllCodexEntries();
-            let total = 0;
-            let unlockedCount = 0;
-            let unclaimedCount = 0;
-
-            Object.keys(all).forEach(cat => {
-                all[cat].forEach(item => {
-                    total++;
-                    const key = `${cat}:${item.id}`;
-                    if (state.codex.unlocked[key]) {
-                        unlockedCount++;
-                        if (!state.codex.claimed[key]) unclaimedCount++;
-                    }
-                });
-            });
-
-            return {
-                total,
-                unlockedCount,
-                unclaimedCount,
-                atkBonus: unlockedCount * 0.03,
-                goldBonus: unlockedCount * 0.02
-            };
-        }
-
-        function updateCodexRedDot() {
-            const cStats = getCodexStats();
-            const dot = document.getElementById('codexRedDot');
-            if (dot) {
-                if (cStats.unclaimedCount > 0) dot.classList.remove('hidden');
-                else dot.classList.add('hidden');
+        function setTextSafe(elementId, value) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.textContent = value;
             }
-            const summaryEl = document.getElementById('codexBonusSummary');
-            if (summaryEl) summaryEl.textContent = `+${Math.round(cStats.atkBonus * 100)}%`;
-        }
-
-        function getDollTotalBonus() {
-            let bonus = 0;
-            state.dolls.forEach(tier => {
-                if (tier) {
-                    const info = DOLL_TIERS.find(d => d.tier === tier);
-                    if (info) bonus += info.bonus;
-                }
-            });
-            return bonus;
-        }
-
-        function getEquippedWeaponStats() {
-            const wId = state.equippedWeapon || 'w_pickaxe';
-            const def = WEAPON_CATALOG.find(w => w.id === wId) || WEAPON_CATALOG[0];
-            const owned = state.ownedWeapons[wId] || { level: 1, stars: 1, shards: 0 };
-            const mult = (1 + (owned.level - 1) * 0.18) * (1 + (owned.stars - 1) * 0.35);
-            return {
-                def,
-                owned,
-                atkPct: def.baseAtkPct * mult,
-                critRate: def.critRate + (owned.stars - 1) * 0.01,
-                critDmg: def.critDmg * (1 + (owned.stars - 1) * 0.2)
-            };
-        }
-
-        function getStats() {
-            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
-            const dollMult = 1 + getDollTotalBonus();
-            const levelMult = 1 + (state.heroLevel - 1) * 0.12;
-            const wStats = getEquippedWeaponStats();
-            const cStats = getCodexStats();
-
-            const baseAtk = 18 + state.upgrades.atk * 14 * Math.pow(1.06, state.upgrades.atk - 1);
-            const atk = baseAtk * heroObj.atkMult * dollMult * levelMult * (1 + wStats.atkPct) * (1 + cStats.atkBonus);
-            const atkInterval = Math.max(0.16, 0.85 * Math.pow(0.975, state.upgrades.spd - 1));
-            const critRate = Math.min(0.90, 0.10 + (state.upgrades.critRate - 1) * 0.02 + wStats.critRate);
-            const critDmg = (2.0 + (state.upgrades.critDmg - 1) * 0.25 + wStats.critDmg) * (state.activeHero === 'terence' ? 1.5 : 1);
-            const goldMult = (1 + (state.upgrades.goldGain - 1) * 0.20) * (1 + getDollTotalBonus() * 0.4) * (1 + cStats.goldBonus);
-            const skillPowerMult = state.activeHero === 'zeus' ? 1.25 : 1.0;
-
-            return { atk, atkInterval, critRate, critDmg, goldMult, skillPowerMult, wStats };
-        }
-
-        function getUpgradeCost(key, level) {
-            const baseCosts = { atk: 25, spd: 40, critRate: 60, critDmg: 50, goldGain: 45 };
-            const growth = { atk: 1.24, spd: 1.32, critRate: 1.38, critDmg: 1.28, goldGain: 1.30 };
-            return Math.floor(baseCosts[key] * Math.pow(growth[key], level - 1));
-        }
-
-        function getMultiUpgradeCost(key, startLvl, count) {
-            let total = 0;
-            for (let i = 0; i < count; i++) total += getUpgradeCost(key, startLvl + i);
-            return total;
-        }
-
-        function getSummonDollCost() {
-            return Math.floor(100 * Math.pow(1.13, state.dollSummonCount));
-        }
-
-        function getForgeGoldCost() {
-            return Math.floor(500 * Math.pow(1.22, state.weaponForgeCount));
-        }
-
-        function getRequiredExp(lvl) {
-            return Math.floor(100 * Math.pow(1.28, lvl - 1));
-        }
-
-        function addQuestProgress(questId, amount = 1) {
-            if (!state.questProgress[questId]) return;
-            state.questProgress[questId].count += amount;
-            updateQuestTrackerUI();
+            return el;
         }
 
         /**
@@ -1825,6 +1866,512 @@
             }
             ctx.save();
             if (screenShake > 0) {
+                ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+            }
+
+            // 地下城背景與三層平台
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, ch);
+            bgGrad.addColorStop(0, '#0c101b');
+            bgGrad.addColorStop(1, '#181326');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, cw, ch);
+
+            platforms.forEach((plat, idx) => {
+                ctx.fillStyle = idx === 2 ? '#272236' : '#352d47';
+                ctx.fillRect(plat.x1, plat.y, plat.x2 - plat.x1, 7);
+                ctx.fillStyle = '#574a73';
+                ctx.fillRect(plat.x1, plat.y, plat.x2 - plat.x1, 2);
+            });
+
+            // 酸雨腐蝕區
+            acidZones.forEach(az => {
+                ctx.fillStyle = 'rgba(132, 204, 22, 0.35)';
+                ctx.fillRect(az.x, az.y - 4, az.width, 6);
+            });
+
+            // 怪物與首領繪製
+            const drawEntity = (ent, isBoss = false) => {
+                const sz = isBoss ? 34 : (ent.size || 20);
+                const yOff = isBoss ? Math.sin(performance.now() * 0.005) * 4 : 0;
+                ctx.save();
+                ctx.translate(ent.x, ent.y + yOff);
+
+                ctx.fillStyle = ent.hitFlash > 0 ? '#ffffff' : (ent.freezeTimer > 0 ? '#7dd3fc' : ent.color);
+                ctx.fillRect(-sz * 0.5, -sz, sz, sz);
+
+                ctx.fillStyle = ent.accent || '#f87171';
+                ctx.fillRect(-sz * 0.3, -sz * 0.72, sz * 0.22, sz * 0.2);
+                ctx.fillRect(sz * 0.08, -sz * 0.72, sz * 0.22, sz * 0.2);
+
+                const hpRatio = Math.max(0, ent.hp / ent.maxHp);
+                const barW = isBoss ? 56 : 32;
+                ctx.fillStyle = 'rgba(0,0,0,0.75)';
+                ctx.fillRect(-barW / 2, -sz - 9, barW, 4);
+                ctx.fillStyle = isBoss ? '#f97316' : '#ef4444';
+                ctx.fillRect(-barW / 2, -sz - 9, barW * hpRatio, 4);
+                ctx.restore();
+            };
+
+            monsters.forEach(m => drawEntity(m, false));
+            if (boss) drawEntity(boss, true);
+
+            // 英雄與手持武器繪製
+            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const wStats = getEquippedWeaponStats();
+            const jumpOffset = hero.jumpAnim > 0 ? -Math.sin((hero.jumpAnim / 0.25) * Math.PI) * 14 : 0;
+            ctx.save();
+            ctx.translate(hero.x, hero.y + jumpOffset);
+            ctx.scale(hero.dir, 1);
+
+            ctx.fillStyle = heroObj.capeColor;
+            ctx.fillRect(-13, -22, 8, 16);
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(-9, -24, 18, 18);
+            ctx.fillStyle = '#fde68a';
+            ctx.fillRect(-8, -34, 16, 11);
+            ctx.fillStyle = heroObj.color;
+            ctx.fillRect(-7, -36, 14, 4);
+
+            // 手持武器與揮砍軌跡
+            const swingAngle = hero.swingAnim > 0 ? -0.9 : 0.2;
+            ctx.save();
+            ctx.translate(10, -15);
+            ctx.rotate(swingAngle);
+            ctx.fillStyle = wStats.def.bladeColor;
+            ctx.fillRect(0, -2.5, 18, 5);
+            ctx.restore();
+
+            if (hero.swingAnim > 0) {
+                ctx.strokeStyle = wStats.def.glowColor;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(8, -14, 22, -0.8, 0.7);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 技能特效
+            lightnings.forEach(l => {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(l.x1, l.y1);
+                ctx.lineTo((l.x1 + l.x2) * 0.5 + (Math.random() - 0.5) * 20, (l.y1 + l.y2) * 0.5);
+                ctx.lineTo(l.x2, l.y2);
+                ctx.stroke();
+            });
+
+            meteors.forEach(met => {
+                ctx.fillStyle = '#f97316';
+                ctx.beginPath();
+                ctx.arc(met.x, met.y, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(met.x, met.y, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            slashes.forEach(s => {
+                ctx.strokeStyle = '#d8b4fe';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 24, -0.9, 0.9);
+                ctx.stroke();
+            });
+
+            icicles.forEach(ic => {
+                ctx.fillStyle = '#7dd3fc';
+                ctx.beginPath();
+                ctx.moveTo(ic.x, ic.y + 10);
+                ctx.lineTo(ic.x - 4, ic.y);
+                ctx.lineTo(ic.x + 4, ic.y);
+                ctx.closePath();
+                ctx.fill();
+            });
+
+            shadowClones.forEach(sc => {
+                ctx.fillStyle = sc.color || '#a5b4fc';
+                ctx.globalAlpha = 0.75;
+                ctx.fillRect(sc.x - 10, sc.y - 26, 20, 24);
+                ctx.globalAlpha = 1;
+            });
+
+            holyBeams.forEach(b => {
+                ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+                ctx.fillRect(b.x - b.width / 2, 0, b.width, ch);
+            });
+
+            if (blackHole) {
+                const ratio = blackHole.life / blackHole.maxLife;
+                const r = 14 + (1 - ratio) * 24;
+                ctx.fillStyle = '#1e1b4b';
+                ctx.beginPath();
+                ctx.arc(blackHole.x, blackHole.y, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#e879f9';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+
+            // 掉落物、粒子與傷害數字
+            drops.forEach(dr => {
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(dr.x, dr.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+
+            damageNumbers.forEach(d => {
+                ctx.font = d.isCrit ? '900 13px "Press Start 2P", sans-serif' : 'bold 11px "Noto Sans TC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#000000';
+                ctx.fillText(d.text, d.x + 1, d.y + 1);
+                ctx.fillStyle = d.color || (d.isCrit ? '#ef4444' : '#fde047');
+                ctx.fillText(d.text, d.x, d.y);
+            });
+
+            ctx.restore();
+        }
+
+        /**
+         * ==========================================
+         * 6. 介面渲染與互動控制器
+         * ==========================================
+         */
+        function renderEquippedSkillBar() {
+            const bar = document.getElementById('equippedSkillBar');
+            bar.innerHTML = state.equippedSkills.map((skId, idx) => {
+                if (!skId) {
+                    return `<div class="w-9 h-9 rounded-lg bg-[#16121f] border border-dashed border-gray-700 flex items-center justify-center text-[10px] text-gray-600">+</div>`;
+                }
+                const def = SKILL_CATALOG.find(s => s.id === skId);
+                return `
+                    <button id="eqBtn_${idx}" type="button" class="eq-skill-btn relative rpg-btn w-9 h-9 rounded-lg flex flex-col items-center justify-center border-cyan-500/50" data-skid="${skId}">
+                        <span class="text-sm leading-none">${def ? def.icon : '⚡'}</span>
+                        <span id="eqCd_${idx}" class="hidden absolute inset-0 bg-black/75 rounded-lg flex items-center justify-center text-[8px] font-mono font-bold text-amber-300">0.0s</span>
+                    </button>
+                `;
+            }).join('');
+
+            bar.querySelectorAll('.eq-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    triggerSkillById(btn.dataset.skid, true);
+                });
+            });
+        }
+
+        function renderUpgradeList() {
+            const list = document.getElementById('upgradeList');
+            const defs = [
+                { key: 'atk', name: '⚔️ 輪班攻擊力', desc: '提升普通攻擊與技能基礎傷害' },
+                { key: 'spd', name: '⚡ 攻速節奏', desc: '縮短普攻間隔，加快清怪節奏' },
+                { key: 'critRate', name: '🎯 暴擊機率', desc: '提高打出高額暴擊傷害的機率' },
+                { key: 'critDmg', name: '💥 暴擊倍率', desc: '放大暴擊時跳出的傷害數字' },
+                { key: 'goldGain', name: '🪙 薪水加成', desc: '增加擊殺怪物與寶箱掉落金幣' }
+            ];
+
+            list.innerHTML = defs.map(d => {
+                const curLvl = state.upgrades[d.key] || 1;
+                const cost = getMultiUpgradeCost(d.key, curLvl, buyMultiplier);
+                return `
+                    <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg px-2.5 py-2 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="text-xs font-bold text-gray-100">${d.name} <span class="text-[10px] text-amber-300 font-mono">Lv.${curLvl}</span></div>
+                            <div class="text-[10px] text-gray-400 truncate">${d.desc}</div>
+                        </div>
+                        <button type="button" class="upg-buy-btn rpg-btn rpg-btn-gold px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0 flex flex-col items-center"
+                                data-key="${d.key}" data-cost="${cost}">
+                            <span>+${buyMultiplier} 級</span>
+                            <span class="text-[9px] font-mono">🪙${formatNumber(cost)}</span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.upg-buy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.key;
+                    const cost = Number(btn.dataset.cost);
+                    if (state.gold < cost) return;
+                    state.gold -= cost;
+                    state.upgrades[key] = (state.upgrades[key] || 1) + buyMultiplier;
+                    state.totalUpgrades += buyMultiplier;
+                    audio.playCoin();
+                    renderUpgradeList();
+                    syncTopAndBattleUI();
+                    saveState();
+                    if (state.autoCloudSync) pushSaveToGoogleSheets();
+                });
+            });
+        }
+
+        function forgeWeapon(useCrystal = false) {
+            let chosen = WEAPON_CATALOG[0];
+            if (useCrystal) {
+                if (state.crystals < 15) {
+                    showToast('💠 技能結晶不足 (需要 15 結晶)');
+                    return;
+                }
+                state.crystals -= 15;
+                const pool = WEAPON_CATALOG.slice(2);
+                chosen = pool[Math.floor(Math.random() * pool.length)];
+            } else {
+                const cost = getForgeGoldCost();
+                if (state.gold < cost) {
+                    showToast('🪙 金幣不足！');
+                    return;
+                }
+                state.gold -= cost;
+                const totalWeight = WEAPON_CATALOG.reduce((acc, w) => acc + w.weight, 0);
+                let roll = Math.random() * totalWeight;
+                for (const w of WEAPON_CATALOG) {
+                    roll -= w.weight;
+                    if (roll <= 0) { chosen = w; break; }
+                }
+            }
+
+            state.weaponForgeCount++;
+            unlockCodexEntry('weapons', chosen.id);
+
+            if (!state.ownedWeapons[chosen.id]) {
+                state.ownedWeapons[chosen.id] = { level: 1, stars: 1, shards: 0 };
+                state.equippedWeapon = chosen.id;
+                showToast(`🗡️ 鍛造獲得全新武器【${chosen.name}】並已裝備！`);
+            } else {
+                const own = state.ownedWeapons[chosen.id];
+                own.shards = (own.shards || 0) + 1;
+                if (own.shards >= 2 && own.stars < 5) {
+                    own.shards -= 2;
+                    own.stars++;
+                    showToast(`⭐ 【${chosen.name}】升星至 ${own.stars} 星！`);
+                } else {
+                    own.level++;
+                    showToast(`🔨 【${chosen.name}】強化至 Lv.${own.level}！`);
+                }
+            }
+
+            audio.playForge();
+            renderWeaponList();
+            syncTopAndBattleUI();
+            saveState();
+            if (state.autoCloudSync) pushSaveToGoogleSheets();
+        }
+
+        function renderWeaponList() {
+            document.getElementById('forgeGoldCost').textContent = `🪙${formatNumber(getForgeGoldCost())}`;
+            const grid = document.getElementById('weaponList');
+            grid.innerHTML = WEAPON_CATALOG.map(w => {
+                const own = state.ownedWeapons[w.id];
+                const isEquipped = state.equippedWeapon === w.id;
+                const rarityCls = `rarity-${w.rarity}`;
+                return `
+                    <div class="bg-[#211c2b] border ${isEquipped ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col justify-between gap-1 ${!own ? 'opacity-60' : ''}">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-lg">${w.icon}</span>
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-bold truncate ${rarityCls}">${w.name}</div>
+                                <div class="text-[9px] text-gray-400">${own ? `Lv.${own.level} ★${own.stars}` : `${w.rarityName} | 未鍛造`}</div>
+                            </div>
+                        </div>
+                        <div class="text-[9px] text-cyan-300">攻擊 +${Math.round(w.baseAtkPct * 100)}%</div>
+                        ${own ? `
+                            <button type="button" class="equip-weapon-btn rpg-btn ${isEquipped ? 'rpg-btn-gold' : ''} w-full py-1 rounded text-[10px] font-bold" data-wid="${w.id}">
+                                ${isEquipped ? '裝備中' : '裝備武器'}
+                            </button>
+                        ` : `<div class="text-[9px] text-center py-1 rounded bg-black/40 text-gray-500">尚未取得</div>`}
+                    </div>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.equip-weapon-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.equippedWeapon = btn.dataset.wid;
+                    unlockCodexEntry('weapons', state.equippedWeapon);
+                    audio.playCoin();
+                    renderWeaponList();
+                    syncTopAndBattleUI();
+                    saveState();
+                });
+            });
+        }
+
+        function renderSkillCodex() {
+            const preview = document.getElementById('equippedSlotsPreview');
+            preview.innerHTML = state.equippedSkills.map((skId, idx) => {
+                const def = skId ? SKILL_CATALOG.find(s => s.id === skId) : null;
+                return `
+                    <div class="bg-[#14111c] border border-cyan-500/40 rounded p-1.5 flex items-center justify-between text-[10px]">
+                        <span class="truncate font-bold ${def ? def.color : 'text-gray-500'}">${def ? `${def.icon} ${def.name}` : `槽位 ${idx + 1} (空)`}</span>
+                        ${skId ? `<button type="button" class="unequip-skill-btn text-red-400 hover:text-red-300 px-1" data-idx="${idx}">✕</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            preview.querySelectorAll('.unequip-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = Number(btn.dataset.idx);
+                    state.equippedSkills[idx] = null;
+                    renderEquippedSkillBar();
+                    renderSkillCodex();
+                    saveState();
+                });
+            });
+
+            const list = document.getElementById('skillCodexList');
+            list.innerHTML = SKILL_CATALOG.map(s => {
+                const lvl = state.unlockedSkills[s.id] || 0;
+                const isEquipped = state.equippedSkills.includes(s.id);
+                const upgCost = Math.floor(200 * Math.pow(1.45, Math.max(0, lvl - 1)));
+
+                return `
+                    <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-2 flex items-center justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-sm">${s.icon}</span>
+                                <span class="text-xs font-bold ${s.color}">${s.name}</span>
+                                ${lvl > 0 ? `<span class="text-[10px] font-mono text-amber-300">Lv.${lvl}</span>` : ''}
+                            </div>
+                            <div class="text-[10px] text-gray-400 truncate mt-0.5">${s.desc}</div>
+                        </div>
+                        <div class="flex flex-col gap-1 shrink-0">
+                            ${lvl > 0 ? `
+                                <button type="button" class="toggle-equip-skill-btn rpg-btn ${isEquipped ? 'rpg-btn-cyan' : ''} px-2 py-1 rounded text-[10px] font-bold" data-sid="${s.id}">
+                                    ${isEquipped ? '已上陣' : '上陣'}
+                                </button>
+                                <button type="button" class="lvl-skill-btn rpg-btn rpg-btn-gold px-2 py-0.5 rounded text-[9px] font-mono" data-sid="${s.id}" data-cost="${upgCost}">
+                                    升等 🪙${formatNumber(upgCost)}
+                                </button>
+                            ` : `
+                                <button type="button" class="unlock-skill-btn rpg-btn rpg-btn-gold px-2 py-1.5 rounded text-[10px] font-bold" data-sid="${s.id}" data-crystal="${s.unlockCrystal}">
+                                    解鎖 💠${s.unlockCrystal}
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.unlock-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sid = btn.dataset.sid;
+                    const req = Number(btn.dataset.crystal);
+                    if (state.crystals < req) {
+                        showToast(`💠 技能結晶不足 (需要 ${req})`);
+                        return;
+                    }
+                    state.crystals -= req;
+                    state.unlockedSkills[sid] = 1;
+                    unlockCodexEntry('skills', sid);
+                    const emptySlot = state.equippedSkills.findIndex(x => x === null);
+                    if (emptySlot !== -1) state.equippedSkills[emptySlot] = sid;
+                    audio.playLevelUp();
+                    renderEquippedSkillBar();
+                    renderSkillCodex();
+                    syncTopAndBattleUI();
+                    saveState();
+                });
+            });
+
+            list.querySelectorAll('.toggle-equip-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sid = btn.dataset.sid;
+                    const idx = state.equippedSkills.indexOf(sid);
+                    if (idx !== -1) {
+                        state.equippedSkills[idx] = null;
+                    } else {
+                        const emptyIdx = state.equippedSkills.findIndex(x => x === null);
+                        if (emptyIdx !== -1) {
+                            state.equippedSkills[emptyIdx] = sid;
+                        } else {
+                            state.equippedSkills[0] = sid;
+                        }
+                    }
+                    renderEquippedSkillBar();
+                    renderSkillCodex();
+                    saveState();
+                });
+            });
+
+            list.querySelectorAll('.lvl-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sid = btn.dataset.sid;
+                    const cost = Number(btn.dataset.cost);
+                    if (state.gold < cost) {
+                        showToast('🪙 金幣不足！');
+                        return;
+                    }
+                    state.gold -= cost;
+                    state.unlockedSkills[sid] = (state.unlockedSkills[sid] || 1) + 1;
+                    audio.playCoin();
+                    renderSkillCodex();
+                    syncTopAndBattleUI();
+                    saveState();
+                });
+            });
+        }
+
+        function renderDollGrid() {
+            const grid = document.getElementById('dollGrid');
+            document.getElementById('dollTabBonus').textContent = `+${Math.round(getDollTotalBonus() * 100)}%`;
+            document.getElementById('summonDollCost').textContent = `🪙${formatNumber(getSummonDollCost())}`;
+
+            grid.innerHTML = state.dolls.map((tier, idx) => {
+                const info = tier ? DOLL_TIERS.find(d => d.tier === tier) : null;
+                const isSel = selectedDollIndex === idx;
+                return `
+                    <div class="doll-slot ${tier ? 'has-doll' : ''} ${isSel ? 'selected' : ''} flex flex-col items-center justify-center p-0.5"
+                         data-idx="${idx}" draggable="${tier ? 'true' : 'false'}">
+                        ${info ? `
+                            <span class="text-base leading-none">${info.icon}</span>
+                            <span class="text-[8px] font-mono font-bold text-amber-300 mt-0.5">T${tier}</span>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            let draggedIdx = null;
+            grid.querySelectorAll('.doll-slot').forEach(slot => {
+                const idx = Number(slot.dataset.idx);
+                slot.addEventListener('click', () => {
+                    if (selectedDollIndex === null) {
+                        if (state.dolls[idx] !== null) {
+                            selectedDollIndex = idx;
+                            renderDollGrid();
+                        }
+                    } else if (selectedDollIndex === idx) {
+                        selectedDollIndex = null;
+                        renderDollGrid();
+                    } else {
+                        mergeOrSwapDolls(selectedDollIndex, idx);
+                    }
+                });
+
+                slot.addEventListener('dragstart', () => {
+                    if (state.dolls[idx] === null) return;
+                    draggedIdx = idx;
+                });
+                slot.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    slot.classList.add('drag-over');
+                });
+                slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    if (draggedIdx !== null && draggedIdx !== idx) {
+                        mergeOrSwapDolls(draggedIdx, idx);
+                    }
+                    draggedIdx = null;
+                });
+            });
+        }
+
         function openLoginModal(prefillId = '', prefillName = '') {
             isLoggedIn = false;
             const idInput = document.getElementById('loginPlayerIdInput');
@@ -1897,6 +2444,11 @@
             recordKnownAccount(state);
             saveState();
             document.getElementById('loginModal').classList.add('hidden');
+            resizeCanvas();
+            if (platforms.length > 1) {
+                hero.x = cw * 0.3;
+                hero.y = platforms[1].y;
+            }
             refreshAllUI();
             checkOfflineEarnings();
             showToast(`👋 歡迎打卡上班，${state.playerName} (${state.playerId})！`);
@@ -2344,22 +2896,24 @@
             const stats = getStats();
             const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
 
-            document.getElementById('headerHeroIcon').textContent = heroObj.icon;
-            document.getElementById('playerNameDisplay').textContent = state.playerName || 'Terence';
-            document.getElementById('playerIdDisplay').textContent = state.playerId || 'PLY-2C9D2E';
-            document.getElementById('goldDisplay').textContent = formatNumber(state.gold);
-            document.getElementById('crystalDisplay').textContent = formatNumber(state.crystals);
+            setTextSafe('headerHeroIcon', heroObj.icon);
+            setTextSafe('playerNameDisplay', state.playerName || 'Terence');
+            setTextSafe('playerIdDisplay', state.playerId || 'PLY-2C9D2E');
+            setTextSafe('goldDisplay', formatNumber(state.gold));
+            setTextSafe('crystalDisplay', formatNumber(state.crystals));
 
             const estDps = (stats.atk / stats.atkInterval) * (1 + stats.critRate * (stats.critDmg - 1));
-            document.getElementById('dpsDisplay').textContent = formatNumber(estDps);
+            setTextSafe('dpsDisplay', formatNumber(estDps));
 
-            document.getElementById('floorDisplay').textContent = `B${state.floor}F`;
-            document.getElementById('waveProgressBar').style.width = `${Math.min(100, (state.killsInFloor / 10) * 100)}%`;
-            document.getElementById('waveText').textContent = `${state.killsInFloor}/10`;
+            setTextSafe('floorDisplay', `B${state.floor}F`);
+            const waveBar = document.getElementById('waveProgressBar');
+            if (waveBar) waveBar.style.width = `${Math.min(100, (state.killsInFloor / 10) * 100)}%`;
+            setTextSafe('waveText', `${state.killsInFloor}/10`);
 
             if (boss) {
-                document.getElementById('specialBannerBar').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
-                document.getElementById('specialBannerTimer').textContent = `${Math.max(0, boss.timer).toFixed(1)}s`;
+                const bossBar = document.getElementById('specialBannerBar');
+                if (bossBar) bossBar.style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
+                setTextSafe('specialBannerTimer', `${Math.max(0, boss.timer).toFixed(1)}s`);
             }
 
             state.equippedSkills.forEach((skId, idx) => {
@@ -2381,19 +2935,22 @@
                 }
             });
 
-            document.getElementById('heroLevelDisplay').textContent = state.heroLevel;
+            setTextSafe('heroLevelDisplay', state.heroLevel);
             const hpPct = Math.min(100, (state.hp / state.maxHp) * 100);
-            document.getElementById('hpBar').style.width = `${hpPct}%`;
-            document.getElementById('hpText').textContent = `HP ${Math.round(hpPct)}%`;
+            const hpBar = document.getElementById('hpBar');
+            if (hpBar) hpBar.style.width = `${hpPct}%`;
+            setTextSafe('hpText', `HP ${Math.round(hpPct)}%`);
 
             const mpPct = (state.mp / state.maxMp) * 100;
-            document.getElementById('mpBar').style.width = `${mpPct}%`;
-            document.getElementById('mpText').textContent = `MP ${Math.floor(state.mp)}/${state.maxMp}`;
+            const mpBar = document.getElementById('mpBar');
+            if (mpBar) mpBar.style.width = `${mpPct}%`;
+            setTextSafe('mpText', `MP ${Math.floor(state.mp)}/${state.maxMp}`);
 
             const reqExp = getRequiredExp(state.heroLevel);
             const expPct = Math.min(100, (state.exp / reqExp) * 100);
-            document.getElementById('expBar').style.width = `${expPct}%`;
-            document.getElementById('expPercentText').textContent = `${expPct.toFixed(1)}%`;
+            const expBar = document.getElementById('expBar');
+            if (expBar) expBar.style.width = `${expPct}%`;
+            setTextSafe('expPercentText', `${expPct.toFixed(1)}%`);
 
             const mineTimerEl = document.getElementById('activeMineCountdown');
             if (mineTimerEl && state.mine.activeRoute && !state.mine.readyToClaim) {
@@ -2512,7 +3069,8 @@
                     btn.classList.remove('text-gray-300');
                     const sub = btn.dataset.subtab;
                     document.querySelectorAll('.subtab-content').forEach(c => c.classList.add('hidden'));
-                    document.getElementById(`subtab-${sub}`).classList.remove('hidden');
+                    const subEl = document.getElementById(`subtab-${sub}`);
+                    if (subEl) subEl.classList.remove('hidden');
                     renderSubtabContent(sub);
                 });
             });
@@ -2530,7 +3088,7 @@
                 });
             });
 
-            document.getElementById('questTrackerBtn').addEventListener('click', () => {
+            safeOn('questTrackerBtn', 'click', () => {
                 for (const q of QUEST_DEFS) {
                     const prog = state.questProgress[q.id];
                     const target = q.baseTarget + prog.tier * q.step;
@@ -2550,56 +3108,66 @@
                 });
             });
 
-            document.getElementById('forgeGoldBtn').addEventListener('click', () => forgeWeapon(false));
-            document.getElementById('forgeCrystalBtn').addEventListener('click', () => forgeWeapon(true));
+            safeOn('forgeGoldBtn', 'click', () => forgeWeapon(false));
+            safeOn('forgeCrystalBtn', 'click', () => forgeWeapon(true));
 
-            document.getElementById('summonDollBtn').addEventListener('click', () => summonDolls(1));
-            document.getElementById('summonFiveBtn').addEventListener('click', () => summonDolls(5));
-            document.getElementById('autoMergeBtn').addEventListener('click', autoMergeAllDolls);
+            safeOn('summonDollBtn', 'click', () => summonDolls(1));
+            safeOn('summonFiveBtn', 'click', () => summonDolls(5));
+            safeOn('autoMergeBtn', 'click', autoMergeAllDolls);
 
-            document.getElementById('autoSkillBtn').addEventListener('click', () => {
+            safeOn('autoSkillBtn', 'click', () => {
                 state.autoSkill = !state.autoSkill;
                 const dot = document.getElementById('autoStatusDot');
-                dot.textContent = state.autoSkill ? 'ON' : 'OFF';
-                dot.className = state.autoSkill ? 'text-[9px] text-emerald-400' : 'text-[9px] text-gray-500';
+                if (dot) {
+                    dot.textContent = state.autoSkill ? 'ON' : 'OFF';
+                    dot.className = state.autoSkill ? 'text-[9px] text-emerald-400' : 'text-[9px] text-gray-500';
+                }
                 showToast(state.autoSkill ? '已開啟自動循環施放技能' : '已切換為手動施放技能');
             });
 
-            document.getElementById('bossBtn').addEventListener('click', startBossBattle);
-            document.getElementById('muteBtn').addEventListener('click', () => {
+            safeOn('bossBtn', 'click', startBossBattle);
+            safeOn('muteBtn', 'click', () => {
                 audio.muted = !audio.muted;
-                document.getElementById('muteBtn').textContent = audio.muted ? '🔇' : '🔊';
+                const muteBtn = document.getElementById('muteBtn');
+                if (muteBtn) muteBtn.textContent = audio.muted ? '🔇' : '🔊';
             });
 
-            document.getElementById('openProfileBtn').addEventListener('click', openProfileModal);
-            document.getElementById('openLoginTopBtn').addEventListener('click', () => {
-                document.getElementById('profileCloudModal').classList.add('hidden');
+            safeOn('openProfileBtn', 'click', openProfileModal);
+            safeOn('openLoginTopBtn', 'click', () => {
+                const profModal = document.getElementById('profileCloudModal');
+                if (profModal) profModal.classList.add('hidden');
                 openLoginModal(state.playerId, state.playerName);
             });
-            document.getElementById('switchAccountFromProfileBtn').addEventListener('click', () => {
-                document.getElementById('profileCloudModal').classList.add('hidden');
+            safeOn('switchAccountFromProfileBtn', 'click', () => {
+                const profModal = document.getElementById('profileCloudModal');
+                if (profModal) profModal.classList.add('hidden');
                 openLoginModal('', '');
             });
-            document.getElementById('loginGenIdBtn').addEventListener('click', () => {
-                document.getElementById('loginPlayerIdInput').value = generatePlayerId();
+            safeOn('loginGenIdBtn', 'click', () => {
+                const idInput = document.getElementById('loginPlayerIdInput');
+                if (idInput) idInput.value = generatePlayerId();
             });
-            document.getElementById('confirmLoginBtn').addEventListener('click', () => {
-                const pid = document.getElementById('loginPlayerIdInput').value;
-                const pname = document.getElementById('loginPlayerNameInput').value;
-                loginWithAccount(pid, pname);
+            safeOn('confirmLoginBtn', 'click', () => {
+                const idInput = document.getElementById('loginPlayerIdInput');
+                const nameInput = document.getElementById('loginPlayerNameInput');
+                loginWithAccount(idInput ? idInput.value : '', nameInput ? nameInput.value : '');
             });
-            document.getElementById('closeProfileModalBtn').addEventListener('click', () => {
-                document.getElementById('profileCloudModal').classList.add('hidden');
-            });
-
-            document.getElementById('genNewIdBtn').addEventListener('click', () => {
-                document.getElementById('inputPlayerId').value = generatePlayerId();
+            safeOn('closeProfileModalBtn', 'click', () => {
+                const profModal = document.getElementById('profileCloudModal');
+                if (profModal) profModal.classList.add('hidden');
             });
 
-            document.getElementById('saveProfileIdentityBtn').addEventListener('click', () => {
+            safeOn('genNewIdBtn', 'click', () => {
+                const inp = document.getElementById('inputPlayerId');
+                if (inp) inp.value = generatePlayerId();
+            });
+
+            safeOn('saveProfileIdentityBtn', 'click', () => {
                 const oldKey = STORAGE_PREFIX + state.playerId;
-                const newId = sanitizePlayerId(document.getElementById('inputPlayerId').value);
-                const newName = document.getElementById('inputPlayerName').value.trim();
+                const idEl = document.getElementById('inputPlayerId');
+                const nameEl = document.getElementById('inputPlayerName');
+                const newId = sanitizePlayerId(idEl ? idEl.value : state.playerId);
+                const newName = nameEl ? nameEl.value.trim() : '';
                 state.playerId = newId;
                 if (newName) state.playerName = newName;
                 try {
@@ -2625,7 +3193,7 @@
         window.onload = function () {
             resizeCanvas();
             hero.x = cw * 0.3;
-            hero.y = platforms[1].y;
+            hero.y = platforms[1] ? platforms[1].y : ch * 0.6;
 
             bindEvents();
             refreshAllUI();
