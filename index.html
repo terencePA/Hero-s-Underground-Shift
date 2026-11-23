@@ -1,0 +1,3215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>地下城輪班英雄 (Hero's Underground Shift)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --panel-bg: #1a1622;
+            --gold: #fbbf24;
+            --crit: #ef4444;
+        }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #09070d;
+            color: #f3f4f6;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100dvh;
+            width: 100%;
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', 'Noto Sans TC', monospace;
+        }
+        .rpg-box {
+            background: var(--panel-bg);
+            border: 3px solid #4c425c;
+            box-shadow: inset 0 0 0 2px #120f18, 0 8px 24px rgba(0, 0, 0, 0.85);
+            border-radius: 12px;
+        }
+        .rpg-btn {
+            background: linear-gradient(180deg, #3b334a 0%, #262030 100%);
+            border: 2px solid #5e5273;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 3px 0 #14111a;
+            transition: transform 0.08s ease, filter 0.12s ease;
+            cursor: pointer;
+        }
+        .rpg-btn:hover:not(:disabled) {
+            filter: brightness(1.08);
+        }
+        .rpg-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 #14111a;
+        }
+        .rpg-btn:disabled {
+            opacity: 0.45;
+            filter: grayscale(0.85);
+            cursor: not-allowed;
+        }
+        .rpg-btn-gold {
+            background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
+            border-color: #fde68a;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        }
+        .rpg-btn-red {
+            background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%);
+            border-color: #fca5a5;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        }
+        .rpg-btn-cyan {
+            background: linear-gradient(180deg, #06b6d4 0%, #0e7490 100%);
+            border-color: #a5f3fc;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #14111a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4c425c;
+            border-radius: 3px;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
+            50% { box-shadow: 0 0 18px rgba(251, 191, 36, 0.95); }
+        }
+        .skill-ready {
+            animation: pulse-glow 1.5s infinite;
+            border-color: #fbbf24 !important;
+        }
+        .doll-slot {
+            aspect-ratio: 1 / 1;
+            background: #16131d;
+            border: 1.5px dashed #3d354b;
+            border-radius: 7px;
+            position: relative;
+            transition: all 0.12s ease;
+        }
+        .doll-slot.has-doll {
+            border-style: solid;
+            border-color: #6d5d87;
+            background: radial-gradient(circle at center, #2d263b 0%, #191522 100%);
+            cursor: grab;
+        }
+        .doll-slot.selected {
+            border-color: #fbbf24;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.85);
+            transform: scale(1.05);
+            z-index: 2;
+        }
+        .doll-slot.drag-over {
+            border-color: #34d399;
+            background: rgba(52, 211, 153, 0.22);
+        }
+        .subtab-active {
+            background: linear-gradient(180deg, #4c1d95 0%, #2e1065 100%) !important;
+            border-color: #c084fc !important;
+            color: #f3e8ff !important;
+        }
+        .rarity-common { border-color: #9ca3af; color: #e5e7eb; }
+        .rarity-rare { border-color: #38bdf8; color: #7dd3fc; }
+        .rarity-epic { border-color: #c084fc; color: #e9d5ff; }
+        .rarity-legend { border-color: #fbbf24; color: #fde68a; }
+        .rarity-mythic { border-color: #f43f5e; color: #fecdd3; }
+    </style>
+</head>
+<body>
+    <!-- 主遊戲容器 -->
+    <div id="app" class="relative w-full max-w-[500px] h-full max-h-[960px] flex flex-col bg-[#120f17] sm:border-x-2 sm:border-[#342d40] shadow-2xl overflow-hidden">
+
+        <!-- 頂部狀態列：玩家 ID / 名稱、金幣、結晶、雲端同步狀態 -->
+        <header class="flex-none px-2 py-1.5 bg-[#1a1622] border-b-2 border-[#383047] flex items-center justify-between gap-1 z-20">
+            <button id="openProfileBtn" class="flex items-center gap-1.5 min-w-0 bg-[#231d2e] hover:bg-[#2d253b] border border-purple-500/40 rounded-lg px-2 py-1 text-left transition shrink">
+                <div class="w-7 h-7 rounded-md bg-[#14111c] border border-amber-400/70 flex items-center justify-center text-sm shrink-0" id="headerHeroIcon">
+                    ⚡
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1">
+                        <span id="playerNameDisplay" class="font-bold text-xs text-amber-300 truncate max-w-[76px]">Terence</span>
+                        <span class="text-[9px] text-gray-400">✏️</span>
+                    </div>
+                    <div class="text-[9px] text-cyan-300 font-mono truncate" id="playerIdDisplay">PLY-2C9D2E</div>
+                </div>
+            </button>
+
+            <div class="flex items-center gap-1 shrink-0">
+                <div class="bg-[#120f18] border border-amber-500/40 rounded-lg px-1.5 py-1 flex items-center gap-1" title="持有資源：金幣">
+                    <span class="text-amber-400 text-[11px]">🪙</span>
+                    <span id="goldDisplay" class="font-bold text-[11px] text-amber-300 font-mono">0</span>
+                </div>
+                <div class="bg-[#120f18] border border-cyan-500/40 rounded-lg px-1.5 py-1 flex items-center gap-1" title="技能結晶">
+                    <span class="text-cyan-400 text-[11px]">💠</span>
+                    <span id="crystalDisplay" class="font-bold text-[11px] text-cyan-300 font-mono">0</span>
+                </div>
+                <button id="quickSyncBtn" class="rpg-btn rpg-btn-cyan px-1.5 py-1 rounded-lg flex items-center gap-0.5 text-[10px] font-bold" title="Google 試算表雲端同步">
+                    <span>☁️</span>
+                    <span id="syncStatusIcon" class="text-[9px]">自動同步</span>
+                </button>
+                <button id="muteBtn" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
+                    🔊
+                </button>
+            </div>
+        </header>
+
+        <!-- 上半部：三層地下城戰鬥畫布 -->
+        <div id="canvasWrapper" class="relative flex-1 min-h-[250px] bg-[#0d1017] overflow-hidden">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- 頂部懸浮資訊列：樓層進度、快捷支線追蹤、首領按鈕 -->
+            <div class="absolute top-2 left-2 right-2 flex items-center justify-between gap-1.5 pointer-events-none">
+                <div class="bg-black/80 backdrop-blur-xs border border-purple-500/40 rounded-lg px-2 py-1 flex items-center gap-1.5 pointer-events-auto shrink-0">
+                    <span class="text-[11px] font-black text-purple-300 pixel-font" id="floorDisplay">B1F</span>
+                    <div class="w-10 sm:w-14 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+                        <div id="waveProgressBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                    <span id="waveText" class="text-[10px] text-gray-300 font-mono">0/10</span>
+                </div>
+
+                <button id="questTrackerBtn" class="pointer-events-auto flex-1 min-w-0 bg-black/80 hover:bg-black/95 border border-cyan-500/50 rounded-lg px-2 py-1 flex items-center justify-between gap-1 text-left transition">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[9px] text-cyan-300 font-bold truncate" id="trackerTitle">📋 委託：清理地下城夜班怪物</div>
+                        <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-0.5">
+                            <div id="trackerBar" class="h-full bg-cyan-400 transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span id="trackerStatus" class="text-[9px] font-mono font-bold text-gray-300 shrink-0">0/20</span>
+                </button>
+
+                <div class="pointer-events-auto shrink-0">
+                    <button id="bossBtn" class="rpg-btn rpg-btn-red px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 shadow-lg">
+                        <span>💀</span>
+                        <span id="bossBtnText">首領</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 首領戰 / 加班防禦戰橫幅 -->
+            <div id="specialBannerContainer" class="hidden absolute top-12 left-3 right-3 bg-black/85 border-2 border-red-500/80 rounded-lg p-1.5 shadow-lg">
+                <div class="flex justify-between items-center text-[11px] font-bold mb-1 px-1">
+                    <span id="specialBannerTitle" class="text-red-400">🔥 地下城首領</span>
+                    <span id="specialBannerTimer" class="text-amber-300 font-mono">30.0s</span>
+                </div>
+                <div class="w-full h-2.5 bg-gray-900 rounded-sm overflow-hidden border border-red-900">
+                    <div id="specialBannerBar" class="h-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 transition-all duration-75" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- 戰鬥底部狀態列：技能快捷與 HP/MP/EXP -->
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#120f17] via-[#120f17]/95 to-transparent pt-3 pb-1.5 px-2 flex flex-col gap-1">
+                <div class="flex items-center justify-between gap-1.5">
+                    <div class="flex items-center gap-1">
+                        <button id="autoSkillBtn" class="rpg-btn px-2 py-1.5 rounded-lg text-[10px] font-bold flex flex-col items-center justify-center border-emerald-500/60 text-emerald-300 shrink-0">
+                            <span>AUTO</span>
+                            <span id="autoStatusDot" class="text-[9px] text-emerald-400">ON</span>
+                        </button>
+                        <div id="equippedSkillBar" class="flex items-center gap-1"></div>
+                    </div>
+
+                    <div class="bg-black/75 border border-amber-500/30 rounded-lg px-2 py-1 text-right shrink-0">
+                        <div class="text-[9px] text-gray-400">秒傷 DPS</div>
+                        <div class="text-[11px] font-bold text-cyan-300 font-mono" id="dpsDisplay">0</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-12 gap-1.5 items-center bg-[#181420]/95 border border-[#3d344d] rounded-lg px-2 py-1">
+                    <div class="col-span-2 text-center">
+                        <div class="text-[9px] text-amber-400 font-bold">LV</div>
+                        <div id="heroLevelDisplay" class="text-xs font-black text-white font-mono">1</div>
+                    </div>
+                    <div class="col-span-5 flex flex-col gap-1">
+                        <div class="relative h-2.5 bg-gray-900 rounded-xs overflow-hidden border border-red-950">
+                            <div id="hpBar" class="h-full bg-gradient-to-r from-red-600 to-rose-400 transition-all duration-150" style="width: 100%"></div>
+                            <span id="hpText" class="absolute inset-0 flex items-center justify-center text-[8px] font-mono font-bold text-white drop-shadow">HP 100%</span>
+                        </div>
+                        <div class="relative h-2.5 bg-gray-900 rounded-xs overflow-hidden border border-blue-950">
+                            <div id="mpBar" class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-150" style="width: 100%"></div>
+                            <span id="mpText" class="absolute inset-0 flex items-center justify-center text-[8px] font-mono font-bold text-white drop-shadow">MP 100/100</span>
+                        </div>
+                    </div>
+                    <div class="col-span-5 flex flex-col justify-center">
+                        <div class="flex justify-between text-[9px] text-emerald-300 font-bold mb-0.5">
+                            <span>★ EXP</span>
+                            <span id="expPercentText">0%</span>
+                        </div>
+                        <div class="relative h-3 bg-gray-900 rounded-xs overflow-hidden border border-emerald-950">
+                            <div id="expBar" class="h-full bg-gradient-to-r from-emerald-600 to-lime-400 transition-all duration-150" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下半部：7 大功能管理面板 -->
+        <div class="flex-none h-[51%] min-h-[305px] bg-[#16131d] border-t-2 border-[#463c57] flex flex-col">
+            <div class="grid grid-cols-7 gap-0.5 p-1 bg-[#110e17] border-b border-[#2e273b]">
+                <button class="tab-btn rpg-btn py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center border-amber-400 text-amber-300" data-tab="upgrade">
+                    <span>💪</span><span>強化</span>
+                </button>
+                <button class="tab-btn rpg-btn py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center text-gray-300" data-tab="weapons">
+                    <span>🗡️</span><span>武器庫</span>
+                </button>
+                <button class="tab-btn rpg-btn py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center text-gray-300" data-tab="skills">
+                    <span>⚡</span><span>技能</span>
+                </button>
+                <button class="tab-btn rpg-btn py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center text-gray-300" data-tab="dolls">
+                    <span>🧸</span><span>玩偶20</span>
+                </button>
+                <button class="tab-btn rpg-btn relative py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center text-gray-300" data-tab="codex">
+                    <span>📖</span><span>圖鑑</span>
+                    <span id="codexRedDot" class="hidden absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                </button>
+                <button class="tab-btn rpg-btn relative py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center text-gray-300" data-tab="quests">
+                    <span>📜</span><span>支線</span>
+                    <span id="questRedDot" class="hidden absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                </button>
+                <button class="tab-btn rpg-btn py-1.5 rounded text-[10px] font-bold flex flex-col items-center justify-center text-gray-300" data-tab="heroes">
+                    <span>🧙‍♂️</span><span>英雄</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-2">
+                <!-- 1. 強化 -->
+                <div id="tab-upgrade" class="tab-content flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-[11px] text-gray-400 px-1">
+                        <span>基礎屬性訓練 (圖鑑共鳴: <b id="codexBonusSummary" class="text-amber-300">+0%</b>)</span>
+                        <div class="flex gap-1">
+                            <button class="mult-btn px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold" data-mult="1">x1</button>
+                            <button class="mult-btn px-2 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-300" data-mult="10">x10</button>
+                        </div>
+                    </div>
+                    <div id="upgradeList" class="flex flex-col gap-1.5"></div>
+                </div>
+
+                <!-- 2. 武器庫 -->
+                <div id="tab-weapons" class="tab-content hidden flex flex-col gap-2">
+                    <div class="bg-[#201b2b] border border-amber-500/40 rounded-lg p-2 flex items-center justify-between gap-2">
+                        <div>
+                            <div class="text-xs font-bold text-amber-300">地下城矮人鍛造爐</div>
+                            <div class="text-[10px] text-gray-400">鍛造 8 把神兵武器，解鎖專屬揮砍特效！</div>
+                        </div>
+                        <div class="flex gap-1.5 shrink-0">
+                            <button id="forgeGoldBtn" class="rpg-btn rpg-btn-gold px-2 py-1.5 rounded-lg text-[10px] font-bold flex flex-col items-center">
+                                <span>🪙 金幣鍛造</span>
+                                <span id="forgeGoldCost" class="text-[9px] font-mono">500</span>
+                            </button>
+                            <button id="forgeCrystalBtn" class="rpg-btn rpg-btn-cyan px-2 py-1.5 rounded-lg text-[10px] font-bold flex flex-col items-center">
+                                <span>💠 結晶精鑄</span>
+                                <span class="text-[9px] font-mono">15 結晶</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="weaponList" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+
+                <!-- 3. 技能 -->
+                <div id="tab-skills" class="tab-content hidden flex flex-col gap-2">
+                    <div class="bg-[#201b2b] border border-cyan-500/40 rounded-lg p-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-cyan-300">目前出戰技能槽位 (4/4)</span>
+                            <span class="text-[10px] text-gray-400">點擊下方技能替換</span>
+                        </div>
+                        <div id="equippedSlotsPreview" class="grid grid-cols-4 gap-1.5"></div>
+                    </div>
+                    <div id="skillCodexList" class="flex flex-col gap-1.5"></div>
+                </div>
+
+                <!-- 4. 20 格 (5x4) 寵物玩偶合成盤面 -->
+                <div id="tab-dolls" class="tab-content hidden flex flex-col gap-1.5 h-full">
+                    <div class="flex items-center justify-between gap-1 bg-[#201b2b] p-1.5 rounded-lg border border-[#3a314d]">
+                        <div class="min-w-0">
+                            <div class="text-[11px] font-bold text-pink-300 truncate">玩偶工坊 (20格 | 加成 <span id="dollTabBonus">+0%</span>)</div>
+                            <div class="text-[9px] text-gray-400 truncate">拖曳或點擊兩個同階玩偶二合一進化</div>
+                        </div>
+                        <div class="flex gap-1 shrink-0">
+                            <button id="autoMergeBtn" class="rpg-btn px-2 py-1 rounded text-[10px] font-bold text-cyan-300 border-cyan-500/50">
+                                ✨ 一鍵合成
+                            </button>
+                            <button id="summonFiveBtn" class="rpg-btn px-2 py-1 rounded text-[10px] font-bold text-pink-300 border-pink-500/50">
+                                召喚x5
+                            </button>
+                            <button id="summonDollBtn" class="rpg-btn rpg-btn-gold px-2 py-1 rounded text-[10px] font-bold flex flex-col items-center">
+                                <span>召喚</span>
+                                <span id="summonDollCost" class="text-[8px] font-mono">🪙100</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="dollGrid" class="grid grid-cols-5 gap-1.5 flex-1 content-start px-0.5"></div>
+                </div>
+
+                <!-- 5. 五大領域圖鑑 -->
+                <div id="tab-codex" class="tab-content hidden flex flex-col gap-2">
+                    <div class="bg-gradient-to-r from-[#261d38] to-[#1a1526] border border-amber-500/50 rounded-lg p-2 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-amber-300">📖 地下城全領域圖鑑</div>
+                            <div class="text-[10px] text-gray-300">圖鑑共鳴：全攻擊 <b id="codexAtkBonus" class="text-emerald-300">+0%</b> | 金幣 <b id="codexGoldBonus" class="text-amber-300">+0%</b></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-black text-cyan-300 font-mono" id="codexProgressText">0/0</div>
+                            <div class="text-[9px] text-gray-400">蒐集進度</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-5 gap-1 bg-[#110e17] p-1 rounded-lg border border-[#2f283d]">
+                        <button class="codex-cat-btn rpg-btn subtab-active py-1 rounded text-[10px] font-bold" data-cat="dolls">🧸 玩偶</button>
+                        <button class="codex-cat-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-cat="weapons">🗡️ 武器</button>
+                        <button class="codex-cat-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-cat="monsters">👾 怪物</button>
+                        <button class="codex-cat-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-cat="skills">⚡ 技能</button>
+                        <button class="codex-cat-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-cat="heroes">🧙‍♂️ 英雄</button>
+                    </div>
+
+                    <div id="codexGrid" class="grid grid-cols-2 gap-1.5"></div>
+                </div>
+
+                <!-- 6. 支線委託 -->
+                <div id="tab-quests" class="tab-content hidden flex flex-col gap-2">
+                    <div class="grid grid-cols-4 gap-1 bg-[#110e17] p-1 rounded-lg border border-[#2f283d]">
+                        <button class="subtab-btn rpg-btn subtab-active py-1 rounded text-[10px] font-bold" data-subtab="daily">📋 輪班委託</button>
+                        <button class="subtab-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-subtab="mine">⛏️ 深淵礦坑</button>
+                        <button class="subtab-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-subtab="defense">🛡️ 加班防禦</button>
+                        <button class="subtab-btn rpg-btn py-1 rounded text-[10px] font-bold text-gray-300" data-subtab="bounty">🎯 菁英懸賞</button>
+                    </div>
+
+                    <div id="subtab-daily" class="subtab-content flex flex-col gap-1.5"></div>
+                    <div id="subtab-mine" class="subtab-content hidden flex flex-col gap-1.5"></div>
+                    <div id="subtab-defense" class="subtab-content hidden flex flex-col gap-1.5"></div>
+                    <div id="subtab-bounty" class="subtab-content hidden flex flex-col gap-1.5"></div>
+                </div>
+
+                <!-- 7. 英雄切換 -->
+                <div id="tab-heroes" class="tab-content hidden flex flex-col gap-2">
+                    <div class="text-xs font-bold text-amber-300 px-1">輪班英雄名冊 (切換出戰角色)</div>
+                    <div id="heroRosterList" class="grid grid-cols-3 gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 玩家帳號檔案 & Google 試算表雲端存檔同步彈窗 -->
+        <div id="profileCloudModal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-3">
+            <div class="rpg-box w-full max-w-[440px] max-h-[90vh] flex flex-col overflow-hidden">
+                <div class="px-3.5 py-2.5 bg-[#231d30] border-b border-[#4c425c] flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-base">☁️</span>
+                        <span class="text-sm font-black text-amber-300">玩家檔案 & Google 試算表同步</span>
+                    </div>
+                    <button id="closeProfileModalBtn" class="w-7 h-7 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs cursor-pointer">✕</button>
+                </div>
+
+                <div class="p-3.5 overflow-y-auto flex flex-col gap-3 text-xs">
+                    <!-- 玩家 ID 與名稱 -->
+                    <div class="bg-[#14111c] border border-purple-500/40 rounded-lg p-2.5 flex flex-col gap-2">
+                        <div class="font-bold text-purple-300 flex justify-between items-center">
+                            <span>🪪 地下城員工識別證</span>
+                            <span class="text-[10px] text-gray-400">工時: <b id="modalShiftTime" class="text-gray-200">00:00:00</b></span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-gray-400 block mb-0.5">玩家 ID</label>
+                                <div class="flex gap-1">
+                                    <input id="inputPlayerId" type="text" class="w-full bg-[#1f1a29] border border-gray-600 rounded px-2 py-1 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400" placeholder="PLY-2C9D2E">
+                                    <button id="genNewIdBtn" class="rpg-btn px-1.5 rounded text-[10px]" title="產生新ID">🎲</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-gray-400 block mb-0.5">遊戲者名稱</label>
+                                <input id="inputPlayerName" type="text" class="w-full bg-[#1f1a29] border border-gray-600 rounded px-2 py-1 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400" placeholder="Terence">
+                            </div>
+                        </div>
+                        <button id="saveProfileIdentityBtn" class="rpg-btn rpg-btn-gold w-full py-1.5 rounded font-bold text-xs">
+                            💾 套用玩家 ID 與名稱
+                        </button>
+                    </div>
+
+                    <!-- 完整遊玩紀錄統計 -->
+                    <div class="bg-[#14111c] border border-[#3a314c] rounded-lg p-2.5">
+                        <div class="font-bold text-amber-300 mb-1.5">📊 完整職涯紀錄 (自動同步至試算表)</div>
+                        <div class="grid grid-cols-3 gap-1.5 text-center">
+                            <div class="bg-[#1e1929] p-1.5 rounded">
+                                <div class="text-[9px] text-gray-400">最高樓層</div>
+                                <div class="font-bold text-purple-300 font-mono" id="statMaxFloor">B1F</div>
+                            </div>
+                            <div class="bg-[#1e1929] p-1.5 rounded">
+                                <div class="text-[9px] text-gray-400">總擊殺數</div>
+                                <div class="font-bold text-red-400 font-mono" id="statKills">0</div>
+                            </div>
+                            <div class="bg-[#1e1929] p-1.5 rounded">
+                                <div class="text-[9px] text-gray-400">圖鑑進度</div>
+                                <div class="font-bold text-cyan-300 font-mono" id="statCodex">0%</div>
+                            </div>
+                            <div class="bg-[#1e1929] p-1.5 rounded">
+                                <div class="text-[9px] text-gray-400">合成次數</div>
+                                <div class="font-bold text-pink-300 font-mono" id="statMerges">0</div>
+                            </div>
+                            <div class="bg-[#1e1929] p-1.5 rounded">
+                                <div class="text-[9px] text-gray-400">武器鍛造</div>
+                                <div class="font-bold text-amber-300 font-mono" id="statForges">0</div>
+                            </div>
+                            <div class="bg-[#1e1929] p-1.5 rounded">
+                                <div class="text-[9px] text-gray-400">技能施放</div>
+                                <div class="font-bold text-emerald-300 font-mono" id="statSkills">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Google 試算表自動與手動同步設定 -->
+                    <div class="bg-[#14111c] border border-cyan-500/50 rounded-lg p-2.5 flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-cyan-300">📗 Google 試算表自動同步</span>
+                            <a href="https://docs.google.com/spreadsheets/d/1C-PW_FbgOryHarLpJ83qQ64ZmGMkadJI0T6m0I6nc-o/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="text-[10px] underline text-amber-300 hover:text-amber-200">
+                                開啟目標試算表 ↗
+                            </a>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-[#1b1626] px-2.5 py-1.5 rounded border border-cyan-500/30">
+                            <span class="text-[11px] text-gray-200 font-bold">⏱️ 每 45 秒自動更新 + 事件即時同步</span>
+                            <input id="autoCloudSyncToggle" type="checkbox" checked class="w-4 h-4 accent-cyan-400 cursor-pointer">
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] text-gray-400 block mb-0.5">Google Apps Script Web App 網址 (/exec)</label>
+                            <input id="inputGasUrl" type="url" class="w-full bg-[#1f1a29] border border-gray-600 rounded px-2 py-1.5 text-[11px] font-mono text-gray-200 focus:outline-none focus:border-cyan-400" placeholder="https://script.google.com/macros/s/.../exec">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <button id="pushToSheetsBtn" class="rpg-btn rpg-btn-cyan py-2 rounded font-bold text-xs flex items-center justify-center gap-1">
+                                <span>⬆️</span><span>立即上傳至試算表</span>
+                            </button>
+                            <button id="pullFromSheetsBtn" class="rpg-btn py-2 rounded font-bold text-xs text-emerald-300 border-emerald-500/50 flex items-center justify-center gap-1">
+                                <span>⬇️</span><span>依玩家ID讀取雲端</span>
+                            </button>
+                        </div>
+
+                        <div class="text-[10px] text-gray-400 flex justify-between items-center">
+                            <span id="lastCloudSyncText">上次雲端同步：尚未同步</span>
+                            <button id="toggleGasGuideBtn" class="text-cyan-300 underline font-bold cursor-pointer">Apps Script 與單列匯出 ▾</button>
+                        </div>
+
+                        <div id="gasGuideBox" class="hidden bg-[#0c0a12] border border-gray-700 rounded p-2 flex flex-col gap-1.5">
+                            <div class="text-[10px] text-amber-200 leading-relaxed">
+                                綁定試算表 <code>1C-PW_FbgOryHarLpJ83qQ64ZmGMkadJI0T6m0I6nc-o</code> 的 Apps Script 程式碼（部署為網頁應用程式，存取權限設為「所有人」）：
+                            </div>
+                            <textarea id="gasCodeArea" readonly rows="5" class="w-full bg-black text-emerald-400 font-mono text-[9px] p-1.5 rounded border border-gray-800">const SHEET_ID = '1C-PW_FbgOryHarLpJ83qQ64ZmGMkadJI0T6m0I6nc-o';
+const HEADERS = ['玩家 ID','遊戲者名稱','同步時間','目前樓層','最高樓層','英雄等級','持有資源：金幣','技能結晶','目前出戰英雄','已解鎖生鏽礦鎬','樓層內已擊殺','圖鑑解鎖進度','總擊殺數','合成次數','完整存檔JSON'];
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheets()[0];
+    if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
+    const d = JSON.parse(e.postData.contents);
+    const row = [d.playerId, d.playerName, d.syncedAt, d.currentFloor, d.maxFloor, d.heroLevel, d.gold, d.crystals, d.activeHero, d.equippedWeapon, d.killsInFloor, d.codexProgress, d.totalKills, d.totalMerges, d.saveJson];
+    const rows = sheet.getDataRange().getValues();
+    let targetRow = -1;
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === String(d.playerId).trim()) { targetRow = i + 1; break; }
+    }
+    if (targetRow > 0) sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
+    else sheet.appendRow(row);
+    return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+  } finally { lock.releaseLock(); }
+}
+function doGet(e) {
+  const pid = (e.parameter && e.parameter.playerId) ? String(e.parameter.playerId).trim() : '';
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const rows = ss.getSheets()[0].getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === pid) {
+      return ContentService.createTextOutput(JSON.stringify({ok:true, found:true, saveJson: rows[i][14]})).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok:true, found:false})).setMimeType(ContentService.MimeType.JSON);
+}</textarea>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <button id="copyGasCodeBtn" class="rpg-btn py-1 rounded text-[10px] font-bold text-cyan-300">📋 複製 Apps Script</button>
+                                <button id="copyTsvRowBtn" class="rpg-btn py-1 rounded text-[10px] font-bold text-amber-300">📄 複製 15 欄 TSV 單列</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 本機備份匯入/匯出 & 重置 -->
+                    <div class="flex justify-between items-center pt-1 border-t border-gray-800">
+                        <div class="flex gap-1.5">
+                            <button id="exportSaveCodeBtn" class="rpg-btn px-2 py-1 rounded text-[10px] text-gray-300">匯出存檔碼</button>
+                            <button id="importSaveCodeBtn" class="rpg-btn px-2 py-1 rounded text-[10px] text-gray-300">匯入存檔碼</button>
+                        </div>
+                        <button id="resetSaveBtn" class="px-2 py-1 rounded bg-red-950/60 border border-red-800 text-red-400 text-[10px] cursor-pointer">
+                            重置本機存檔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 匯入存檔碼彈窗 -->
+        <div id="importCodeModal" class="hidden absolute inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+            <div class="rpg-box w-full max-w-[340px] p-4 flex flex-col gap-2.5">
+                <div class="text-sm font-bold text-amber-300">📥 貼上 JSON 存檔代碼</div>
+                <textarea id="importCodeInput" rows="4" class="w-full bg-[#120f18] border border-gray-600 rounded p-2 text-[10px] font-mono text-gray-200" placeholder="請貼上匯出的存檔代碼..."></textarea>
+                <div class="flex gap-2">
+                    <button id="cancelImportBtn" class="rpg-btn flex-1 py-1.5 rounded text-xs">取消</button>
+                    <button id="confirmImportBtn" class="rpg-btn rpg-btn-gold flex-1 py-1.5 rounded text-xs font-bold">確認載入</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 離線掛機收益彈窗 -->
+        <div id="offlineModal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="rpg-box w-full max-w-[340px] p-4 flex flex-col items-center text-center gap-3">
+                <div class="text-3xl">⏰</div>
+                <div class="text-base font-black text-amber-300">地下城輪班交接報告</div>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    在你離開的 <span id="offlineTimeText" class="text-cyan-300 font-bold">0 分鐘</span> 期間，英雄依然在地下城勤奮打卡刷怪！
+                </p>
+                <div class="w-full bg-[#120f18] border border-amber-500/40 rounded-lg p-3 flex flex-col gap-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">獲得金幣：</span>
+                        <span id="offlineGoldText" class="font-bold text-amber-400 font-mono">+0</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">獲得經驗：</span>
+                        <span id="offlineExpText" class="font-bold text-emerald-400 font-mono">+0</span>
+                    </div>
+                </div>
+                <button id="claimOfflineBtn" class="rpg-btn rpg-btn-gold w-full py-2.5 rounded-lg font-bold text-sm">
+                    打卡領取薪水！
+                </button>
+            </div>
+        </div>
+
+        <!-- 輕量級提示訊息框 -->
+        <div id="toastBox" class="pointer-events-none absolute top-14 left-1/2 -translate-x-1/2 bg-black/95 border border-amber-400/90 text-amber-200 text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xl opacity-0 transition-opacity duration-200 z-50 whitespace-nowrap">
+            提示訊息
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ==========================================
+         * 1. 復古像素音效合成器 (Web Audio API)
+         * ==========================================
+         */
+        class RetroAudio {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playTone(freq, type, duration, vol = 0.07, slideTo = null) {
+                if (this.muted) return;
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    if (slideTo) {
+                        osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration);
+                    }
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            }
+            playHit(isCrit) {
+                if (isCrit) this.playTone(540, 'square', 0.08, 0.045, 190);
+                else this.playTone(240, 'triangle', 0.05, 0.025, 90);
+            }
+            playLightning() {
+                this.playTone(880, 'sawtooth', 0.25, 0.07, 140);
+                setTimeout(() => this.playTone(1200, 'square', 0.18, 0.05, 220), 60);
+            }
+            playExplosion() {
+                this.playTone(140, 'sawtooth', 0.35, 0.1, 35);
+                this.playTone(90, 'square', 0.4, 0.08, 25);
+            }
+            playSlash() { this.playTone(620, 'triangle', 0.14, 0.06, 190); }
+            playFrost() { this.playTone(1100, 'sine', 0.25, 0.07, 420); }
+            playHoly() { this.playTone(523, 'sine', 0.3, 0.08, 1046); }
+            playAcid() { this.playTone(190, 'sawtooth', 0.28, 0.06, 110); }
+            playBlackHole() { this.playTone(120, 'sine', 0.55, 0.1, 42); }
+            playCoin() {
+                this.playTone(987, 'sine', 0.07, 0.04);
+                setTimeout(() => this.playTone(1318, 'sine', 0.1, 0.04), 45);
+            }
+            playMerge() {
+                this.playTone(440, 'triangle', 0.09, 0.07);
+                setTimeout(() => this.playTone(554, 'triangle', 0.09, 0.07), 65);
+                setTimeout(() => this.playTone(659, 'triangle', 0.16, 0.08), 130);
+            }
+            playForge() {
+                this.playTone(300, 'square', 0.08, 0.08, 600);
+                setTimeout(() => this.playTone(880, 'triangle', 0.22, 0.09, 1320), 90);
+            }
+            playLevelUp() {
+                [523, 659, 784, 1046].forEach((n, i) => setTimeout(() => this.playTone(n, 'square', 0.13, 0.06), i * 75));
+            }
+        }
+        const audio = new RetroAudio();
+
+        /**
+         * ==========================================
+         * 2. 核心資料庫定義
+         * ==========================================
+         */
+        const DEFAULT_GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbxQcTH0YzOkmVGI-WQBomAgwupPC95I4anb9uxVjEq0hwu8LC-jv-f5xEHVMsoBdhKH/exec';
+        const STORAGE_KEY = 'heros_underground_shift_full_v1';
+
+        const HERO_DATA = [
+            { id: 'zeus', name: '雷神 Zeus', title: '高壓電工', icon: '⚡', color: '#38bdf8', capeColor: '#1d4ed8', unlockFloor: 1, bonusText: '全技能威力 +25%', atkMult: 1.0 },
+            { id: 'terence', name: '騎士 Terence', title: '夜班保全', icon: '🗡️', color: '#f87171', capeColor: '#b91c1c', unlockFloor: 3, bonusText: '暴擊傷害 +50%', atkMult: 1.25 },
+            { id: 'ignis', name: '烈焰 Ignis', title: '鍋爐技師', icon: '🔥', color: '#fb923c', capeColor: '#7c2d12', unlockFloor: 6, bonusText: '全攻擊力 +50%', atkMult: 1.5 }
+        ];
+
+        const WEAPON_CATALOG = [
+            { id: 'w_pickaxe', name: '生鏽礦鎬', icon: '⛏️', rarity: 'common', rarityName: '普通', bladeColor: '#9ca3af', glowColor: '#d1d5db', baseAtkPct: 0.15, critRate: 0.02, critDmg: 0.10, weight: 32, desc: '地下城新人標配挖礦工具。' },
+            { id: 'w_mithril', name: '秘銀短劍', icon: '🗡️', rarity: 'common', rarityName: '普通', bladeColor: '#e2e8f0', glowColor: '#93c5fd', baseAtkPct: 0.30, critRate: 0.04, critDmg: 0.20, weight: 26, desc: '輕巧鋒利的秘銀鍛造短劍。' },
+            { id: 'w_thunder_hammer', name: '雷鳴戰鎚', icon: '🔨', rarity: 'rare', rarityName: '稀有', bladeColor: '#38bdf8', glowColor: '#0284c7', baseAtkPct: 0.55, critRate: 0.05, critDmg: 0.35, weight: 16, desc: '揮擊時迸發高壓電弧的重鎚。' },
+            { id: 'w_flame_blade', name: '烈焰巨刃', icon: '🔥', rarity: 'rare', rarityName: '稀有', bladeColor: '#fb923c', glowColor: '#ea580c', baseAtkPct: 0.85, critRate: 0.06, critDmg: 0.50, weight: 12, desc: '劍身燃燒著不滅熔岩烈火。' },
+            { id: 'w_frost_staff', name: '寒霜法杖', icon: '❄️', rarity: 'epic', rarityName: '史詩', bladeColor: '#7dd3fc', glowColor: '#bae6fd', baseAtkPct: 1.30, critRate: 0.08, critDmg: 0.75, weight: 7, desc: '蘊含極地冰晶之力的魔導杖。' },
+            { id: 'w_shadow_daggers', name: '暗影雙匕', icon: '🌑', rarity: 'epic', rarityName: '史詩', bladeColor: '#c084fc', glowColor: '#7e22ce', baseAtkPct: 1.80, critRate: 0.12, critDmg: 1.00, weight: 4, desc: '專攻要害的夜行暗殺雙刃。' },
+            { id: 'w_holy_spear', name: '聖光審判之矛', icon: '🔱', rarity: 'legend', rarityName: '傳說', bladeColor: '#facc15', glowColor: '#fef08a', baseAtkPct: 2.80, critRate: 0.15, critDmg: 1.40, weight: 2, desc: '貫穿黑暗的黃金聖潔長矛。' },
+            { id: 'w_chaos_sword', name: '混沌終焉神劍', icon: '🌌', rarity: 'mythic', rarityName: '神話', bladeColor: '#f43f5e', glowColor: '#fda4af', baseAtkPct: 4.50, critRate: 0.20, critDmg: 2.00, weight: 1, desc: '撕裂次元的終極地下城神兵。' }
+        ];
+
+        const DOLL_TIERS = [
+            { tier: 1, name: '見習史萊姆', icon: '💧', bonus: 0.12 },
+            { tier: 2, name: '電擊毛球怪', icon: '⚡', bonus: 0.30 },
+            { tier: 3, name: '火焰小惡魔', icon: '🔥', bonus: 0.70 },
+            { tier: 4, name: '水晶石像鬼', icon: '💎', bonus: 1.50 },
+            { tier: 5, name: '暗影死神偶', icon: '👻', bonus: 3.20 },
+            { tier: 6, name: '黃金機械龍', icon: '🐲', bonus: 6.80 },
+            { tier: 7, name: '極光獨角獸', icon: '🦄', bonus: 14.0 },
+            { tier: 8, name: '深淵六翼天使', icon: '👼', bonus: 28.0 },
+            { tier: 9, name: '星界虛空行者', icon: '👾', bonus: 55.0 },
+            { tier: 10, name: '泰坦機甲戰神', icon: '🤖', bonus: 110.0 },
+            { tier: 11, name: '創世太陽神鳥', icon: '🦅', bonus: 220.0 },
+            { tier: 12, name: '無盡輪班主宰', icon: '👑', bonus: 450.0 }
+        ];
+
+        const SKILL_CATALOG = [
+            { id: 'lightning', name: '雷霆風暴', icon: '⚡', color: 'text-cyan-300', cd: 5.0, mpCost: 18, mult: 3.6, unlockCrystal: 0, desc: '召喚全屏高壓雷電網，對所有怪物造成 3 段連環電擊。' },
+            { id: 'meteor', name: '烈焰隕石', icon: '☄️', color: 'text-orange-400', cd: 7.5, mpCost: 26, mult: 6.2, unlockCrystal: 0, desc: '從高空降下多顆巨型火球轟炸平台，引發烈焰爆炸。' },
+            { id: 'slash', name: '暗影斬擊', icon: '⚔️', color: 'text-purple-300', cd: 3.2, mpCost: 12, mult: 2.4, unlockCrystal: 0, desc: '揮出穿透性暗影劍氣波，快速橫掃鄰近層敵人。' },
+            { id: 'blizzard', name: '極地冰封', icon: '❄️', color: 'text-sky-300', cd: 8.5, mpCost: 24, mult: 4.2, unlockCrystal: 15, desc: '降下全屏像素冰錐與寒霜震盪波，凍結怪物 2.5 秒。' },
+            { id: 'judgment', name: '神聖審判', icon: '✨', color: 'text-yellow-300', cd: 9.0, mpCost: 28, mult: 5.5, unlockCrystal: 30, desc: '降下貫穿三層的金色聖光，造成高額傷害並回復 30% HP。' },
+            { id: 'acid', name: '酸雨腐蝕', icon: '🧪', color: 'text-lime-400', cd: 8.0, mpCost: 22, mult: 5.2, unlockCrystal: 50, desc: '生成腐蝕酸雨沼澤 4 秒，持續跳出劇毒傷害並易傷 +25%。' },
+            { id: 'blackhole', name: '黑洞奇點', icon: '🌌', color: 'text-fuchsia-400', cd: 11.0, mpCost: 35, mult: 8.8, unlockCrystal: 75, desc: '中央生成黑洞奇點吸聚怪物並引發終極坍縮大爆炸！' },
+            { id: 'overload', name: '超載電弧', icon: '🔋', color: 'text-amber-300', cd: 6.5, mpCost: 22, mult: 4.8, unlockCrystal: 105, desc: '釋放高壓超載電弧在上下平台高速穿梭連擊。' }
+        ];
+
+        const MONSTER_TYPES = [
+            { id: 'm_yeti', name: '冰原雪怪', icon: '🦍', color: '#e2e8f0', accent: '#38bdf8', hpMult: 1.0, size: 22, desc: '棲息於地下冰層的長毛巨獸。' },
+            { id: 'm_wolf', name: '地下狼人', icon: '🐺', color: '#92400e', accent: '#f59e0b', hpMult: 0.85, size: 20, desc: '動作敏捷的洞窟夜行掠食者。' },
+            { id: 'm_golem', name: '藍晶魔像', icon: '🗿', color: '#0284c7', accent: '#7dd3fc', hpMult: 1.35, size: 25, desc: '由高純度魔導礦石凝聚的守衛。' },
+            { id: 'm_goblin', name: '地精礦工', icon: '👺', color: '#4d7c0f', accent: '#a3e635', hpMult: 0.75, size: 18, desc: '在礦坑中偷挖金幣的貪婪地精。' }
+        ];
+
+        const BOUNTY_TEMPLATES = [
+            { id: 'b_gold_goblin', name: '黃金貪婪哥布林', icon: '💰', prefix: '【通緝】', color: '#fbbf24', accent: '#fef08a', hpMult: 4.5, goldMult: 12, crystalReward: 12, desc: '背著滿袋金幣逃竄的通緝犯。' },
+            { id: 'b_lava_miner', name: '暴走熔岩礦工頭目', icon: '🌋', prefix: '【懸賞】', color: '#ea580c', accent: '#facc15', hpMult: 6.0, goldMult: 15, crystalReward: 18, desc: '揮舞灼熱巨鎬的狂暴工頭。' },
+            { id: 'b_crystal_hydra', name: '深淵水晶雙頭魔像', icon: '💠', prefix: '【極危】', color: '#06b6d4', accent: '#e0f2fe', hpMult: 8.0, goldMult: 20, crystalReward: 25, desc: '散發刺眼藍光的極度危險變異體。' }
+        ];
+
+        const BOSS_CATALOG = [
+            { id: 'boss_0', name: '深淵熔岩巨像', icon: '👹', desc: '鎮守地下城第一道防線的熔岩巨人。' },
+            { id: 'boss_1', name: '極凍雪怪之王', icon: '🥶', desc: '掌控暴風雪的古老冰原霸主。' },
+            { id: 'boss_2', name: '雷霆泰坦守衛', icon: '⚡', desc: '全身纏繞高壓閃電的遠古兵器。' },
+            { id: 'boss_3', name: '暗黑礦坑霸主', icon: '🦇', desc: '盤踞在深層黑曜石礦脈的惡魔領主。' },
+            { id: 'boss_4', name: '混沌魔龍領主', icon: '🐉', desc: '地下城最深處的傳說級滅世巨龍。' }
+        ];
+
+        const QUEST_DEFS = [
+            { id: 'q_kill', title: '清理地下城夜班怪物', baseTarget: 20, step: 15, rewardType: 'crystal', baseReward: 10 },
+            { id: 'q_skill', title: '施放華麗主動技能', baseTarget: 8, step: 6, rewardType: 'crystal', baseReward: 12 },
+            { id: 'q_merge', title: '完成寵物玩偶合成', baseTarget: 3, step: 3, rewardType: 'gold', baseReward: 450 },
+            { id: 'q_boss', title: '擊敗地下城樓層首領', baseTarget: 1, step: 1, rewardType: 'crystal', baseReward: 20 }
+        ];
+
+        const MINE_ROUTES = [
+            { id: 'short', name: '表層碎晶礦脈 (30秒)', duration: 30, crystalReward: 8, goldMult: 4 },
+            { id: 'medium', name: '中層魔導礦坑 (2分鐘)', duration: 120, crystalReward: 25, goldMult: 14 },
+            { id: 'deep', name: '深淵黑曜石核心 (5分鐘)', duration: 300, crystalReward: 65, goldMult: 38 }
+        ];
+
+        function generatePlayerId() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return `PLY-${code}`;
+        }
+
+        const DEFAULT_STATE = {
+            playerId: 'PLY-2C9D2E',
+            playerName: 'Terence',
+            gasWebAppUrl: DEFAULT_GAS_EXEC_URL,
+            autoCloudSync: true,
+            lastCloudSyncTime: '',
+            gold: 500,
+            crystals: 25,
+            floor: 1,
+            maxFloor: 1,
+            killsInFloor: 0,
+            heroLevel: 1,
+            exp: 0,
+            hp: 100,
+            maxHp: 100,
+            mp: 100,
+            maxMp: 100,
+            shiftSeconds: 0,
+            activeHero: 'zeus',
+            autoSkill: true,
+            upgrades: { atk: 1, spd: 1, critRate: 1, critDmg: 1, goldGain: 1 },
+            equippedWeapon: 'w_pickaxe',
+            ownedWeapons: {
+                w_pickaxe: { level: 1, stars: 1, shards: 0 }
+            },
+            weaponForgeCount: 0,
+            unlockedSkills: { lightning: 1, meteor: 1, slash: 1 },
+            equippedSkills: ['lightning', 'meteor', 'slash', null],
+            dolls: [1, 1, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            dollSummonCount: 0,
+            codex: {
+                unlocked: {
+                    'heroes:zeus': true,
+                    'weapons:w_pickaxe': true,
+                    'dolls:1': true,
+                    'skills:lightning': true,
+                    'skills:meteor': true,
+                    'skills:slash': true
+                },
+                claimed: {}
+            },
+            totalKills: 0,
+            totalSkills: 0,
+            totalMerges: 0,
+            totalUpgrades: 0,
+            totalBounties: 0,
+            questProgress: {
+                q_kill: { count: 0, tier: 0 },
+                q_skill: { count: 0, tier: 0 },
+                q_merge: { count: 0, tier: 0 },
+                q_boss: { count: 0, tier: 0 }
+            },
+            mine: { activeRoute: null, endTime: 0, readyToClaim: false },
+            bounty: { active: false, templateIdx: 0, completed: false },
+            lastSaveTime: Date.now()
+        };
+
+        let state = loadState();
+        let buyMultiplier = 1;
+        let selectedDollIndex = null;
+        let activeCodexCat = 'dolls';
+        let skillTimers = {};
+        let isCloudSyncing = false;
+
+        /**
+         * ==========================================
+         * 3. 存檔、圖鑑與數值計算引擎
+         * ==========================================
+         */
+        function formatNumber(num) {
+            if (num < 1000) return Math.floor(num).toString();
+            const units = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi'];
+            const tier = Math.floor(Math.log10(num) / 3);
+            if (tier >= units.length) return num.toExponential(2);
+            const scale = Math.pow(10, tier * 3);
+            const scaled = num / scale;
+            return scaled.toFixed(scaled < 10 ? 2 : 1) + units[tier];
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+                const parsed = JSON.parse(raw);
+                const merged = {
+                    ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
+                    ...parsed,
+                    gasWebAppUrl: (parsed && typeof parsed.gasWebAppUrl === 'string' && parsed.gasWebAppUrl.trim())
+                        ? parsed.gasWebAppUrl.trim()
+                        : DEFAULT_GAS_EXEC_URL,
+                    upgrades: { ...DEFAULT_STATE.upgrades, ...(parsed.upgrades || {}) },
+                    ownedWeapons: { ...DEFAULT_STATE.ownedWeapons, ...(parsed.ownedWeapons || {}) },
+                    unlockedSkills: { ...DEFAULT_STATE.unlockedSkills, ...(parsed.unlockedSkills || {}) },
+                    codex: {
+                        unlocked: { ...DEFAULT_STATE.codex.unlocked, ...((parsed.codex && parsed.codex.unlocked) || {}) },
+                        claimed: { ...((parsed.codex && parsed.codex.claimed) || {}) }
+                    },
+                    questProgress: { ...DEFAULT_STATE.questProgress, ...(parsed.questProgress || {}) },
+                    mine: { ...DEFAULT_STATE.mine, ...(parsed.mine || {}) },
+                    bounty: { ...DEFAULT_STATE.bounty, ...(parsed.bounty || {}) }
+                };
+                if (!Array.isArray(merged.dolls) || merged.dolls.length !== 20) {
+                    const arr = new Array(20).fill(null);
+                    if (Array.isArray(merged.dolls)) {
+                        merged.dolls.slice(0, 20).forEach((v, i) => { arr[i] = v; });
+                    }
+                    merged.dolls = arr;
+                }
+                return merged;
+            } catch (e) {
+                return JSON.parse(JSON.stringify(DEFAULT_STATE));
+            }
+        }
+
+        function saveState() {
+            try {
+                state.lastSaveTime = Date.now();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {}
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastBox');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+        }
+
+        function unlockCodexEntry(category, itemId) {
+            const key = `${category}:${itemId}`;
+            if (!state.codex.unlocked[key]) {
+                state.codex.unlocked[key] = true;
+                updateCodexRedDot();
+            }
+        }
+
+        function getAllCodexEntries() {
+            return {
+                dolls: DOLL_TIERS.map(d => ({
+                    id: String(d.tier),
+                    name: `T${d.tier} ${d.name}`,
+                    icon: d.icon,
+                    desc: `玩偶提供 +${Math.round(d.bonus * 100)}% 全隊加成`,
+                    rewardCrystal: 5 + d.tier * 2
+                })),
+                weapons: WEAPON_CATALOG.map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    icon: w.icon,
+                    desc: `${w.rarityName}神兵 | 基礎攻擊 +${Math.round(w.baseAtkPct * 100)}%`,
+                    rewardCrystal: 10
+                })),
+                monsters: [
+                    ...MONSTER_TYPES.map(m => ({ id: m.id, name: m.name, icon: m.icon, desc: m.desc, rewardCrystal: 6 })),
+                    ...BOUNTY_TEMPLATES.map(b => ({ id: b.id, name: b.name, icon: b.icon, desc: b.desc, rewardCrystal: 15 })),
+                    ...BOSS_CATALOG.map(bs => ({ id: bs.id, name: bs.name, icon: bs.icon, desc: bs.desc, rewardCrystal: 18 }))
+                ],
+                skills: SKILL_CATALOG.map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    icon: s.icon,
+                    desc: s.desc,
+                    rewardCrystal: 10
+                })),
+                heroes: HERO_DATA.map(h => ({
+                    id: h.id,
+                    name: h.name,
+                    icon: h.icon,
+                    desc: `${h.title} | ${h.bonusText}`,
+                    rewardCrystal: 20
+                }))
+            };
+        }
+
+        function getCodexStats() {
+            const all = getAllCodexEntries();
+            let total = 0;
+            let unlockedCount = 0;
+            let unclaimedCount = 0;
+
+            Object.keys(all).forEach(cat => {
+                all[cat].forEach(item => {
+                    total++;
+                    const key = `${cat}:${item.id}`;
+                    if (state.codex.unlocked[key]) {
+                        unlockedCount++;
+                        if (!state.codex.claimed[key]) unclaimedCount++;
+                    }
+                });
+            });
+
+            return {
+                total,
+                unlockedCount,
+                unclaimedCount,
+                atkBonus: unlockedCount * 0.03,
+                goldBonus: unlockedCount * 0.02
+            };
+        }
+
+        function updateCodexRedDot() {
+            const cStats = getCodexStats();
+            const dot = document.getElementById('codexRedDot');
+            if (dot) {
+                if (cStats.unclaimedCount > 0) dot.classList.remove('hidden');
+                else dot.classList.add('hidden');
+            }
+            const summaryEl = document.getElementById('codexBonusSummary');
+            if (summaryEl) summaryEl.textContent = `+${Math.round(cStats.atkBonus * 100)}%`;
+        }
+
+        function getDollTotalBonus() {
+            let bonus = 0;
+            state.dolls.forEach(tier => {
+                if (tier) {
+                    const info = DOLL_TIERS.find(d => d.tier === tier);
+                    if (info) bonus += info.bonus;
+                }
+            });
+            return bonus;
+        }
+
+        function getEquippedWeaponStats() {
+            const wId = state.equippedWeapon || 'w_pickaxe';
+            const def = WEAPON_CATALOG.find(w => w.id === wId) || WEAPON_CATALOG[0];
+            const owned = state.ownedWeapons[wId] || { level: 1, stars: 1, shards: 0 };
+            const mult = (1 + (owned.level - 1) * 0.18) * (1 + (owned.stars - 1) * 0.35);
+            return {
+                def,
+                owned,
+                atkPct: def.baseAtkPct * mult,
+                critRate: def.critRate + (owned.stars - 1) * 0.01,
+                critDmg: def.critDmg * (1 + (owned.stars - 1) * 0.2)
+            };
+        }
+
+        function getStats() {
+            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const dollMult = 1 + getDollTotalBonus();
+            const levelMult = 1 + (state.heroLevel - 1) * 0.12;
+            const wStats = getEquippedWeaponStats();
+            const cStats = getCodexStats();
+
+            const baseAtk = 18 + state.upgrades.atk * 14 * Math.pow(1.06, state.upgrades.atk - 1);
+            const atk = baseAtk * heroObj.atkMult * dollMult * levelMult * (1 + wStats.atkPct) * (1 + cStats.atkBonus);
+            const atkInterval = Math.max(0.16, 0.85 * Math.pow(0.975, state.upgrades.spd - 1));
+            const critRate = Math.min(0.90, 0.10 + (state.upgrades.critRate - 1) * 0.02 + wStats.critRate);
+            const critDmg = (2.0 + (state.upgrades.critDmg - 1) * 0.25 + wStats.critDmg) * (state.activeHero === 'terence' ? 1.5 : 1);
+            const goldMult = (1 + (state.upgrades.goldGain - 1) * 0.20) * (1 + getDollTotalBonus() * 0.4) * (1 + cStats.goldBonus);
+            const skillPowerMult = state.activeHero === 'zeus' ? 1.25 : 1.0;
+
+            return { atk, atkInterval, critRate, critDmg, goldMult, skillPowerMult, wStats };
+        }
+
+        function getUpgradeCost(key, level) {
+            const baseCosts = { atk: 25, spd: 40, critRate: 60, critDmg: 50, goldGain: 45 };
+            const growth = { atk: 1.24, spd: 1.32, critRate: 1.38, critDmg: 1.28, goldGain: 1.30 };
+            return Math.floor(baseCosts[key] * Math.pow(growth[key], level - 1));
+        }
+
+        function getMultiUpgradeCost(key, startLvl, count) {
+            let total = 0;
+            for (let i = 0; i < count; i++) total += getUpgradeCost(key, startLvl + i);
+            return total;
+        }
+
+        function getSummonDollCost() {
+            return Math.floor(100 * Math.pow(1.13, state.dollSummonCount));
+        }
+
+        function getForgeGoldCost() {
+            return Math.floor(500 * Math.pow(1.22, state.weaponForgeCount));
+        }
+
+        function getRequiredExp(lvl) {
+            return Math.floor(100 * Math.pow(1.28, lvl - 1));
+        }
+
+        function addQuestProgress(questId, amount = 1) {
+            if (!state.questProgress[questId]) return;
+            state.questProgress[questId].count += amount;
+            updateQuestTrackerUI();
+        }
+
+        /**
+         * ==========================================
+         * 4. Google 試算表自動與手動同步模組
+         * ==========================================
+         */
+        function buildCloudPayload() {
+            const cStats = getCodexStats();
+            const nowStr = new Date().toLocaleString('zh-TW', { hour12: false });
+            const jsonStr = JSON.stringify(state);
+            return {
+                playerId: state.playerId,
+                playerName: state.playerName,
+                syncedAt: nowStr,
+                currentFloor: `B${state.floor}F`,
+                maxFloor: `B${state.maxFloor}F`,
+                heroLevel: state.heroLevel,
+                gold: Math.floor(state.gold),
+                crystals: Math.floor(state.crystals),
+                activeHero: state.activeHero,
+                equippedWeapon: state.equippedWeapon,
+                killsInFloor: state.killsInFloor,
+                codexProgress: `${cStats.unlockedCount}/${cStats.total}`,
+                totalKills: state.totalKills,
+                totalMerges: state.totalMerges,
+                saveJson: jsonStr
+            };
+        }
+
+        async function pushSaveToGoogleSheets(silent = false) {
+            saveState();
+            const url = (state.gasWebAppUrl || DEFAULT_GAS_EXEC_URL).trim();
+            if (!url || isCloudSyncing) return;
+
+            isCloudSyncing = true;
+            const syncIcon = document.getElementById('syncStatusIcon');
+            if (syncIcon) syncIcon.textContent = '同步中';
+
+            try {
+                const payload = buildCloudPayload();
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                state.lastCloudSyncTime = payload.syncedAt;
+                saveState();
+                if (syncIcon) syncIcon.textContent = '已同步';
+                const timeLabel = document.getElementById('lastCloudSyncText');
+                if (timeLabel) timeLabel.textContent = `上次雲端同步：${state.lastCloudSyncTime}`;
+                if (!silent) {
+                    showToast(`☁️ 已將玩家 [${state.playerName}] 紀錄同步至 Google 試算表！`);
+                }
+            } catch (err) {
+                if (syncIcon) syncIcon.textContent = '重試';
+                if (!silent) {
+                    showToast('❌ 雲端同步失敗，請檢查網路或 Apps Script 部署權限');
+                }
+            } finally {
+                isCloudSyncing = false;
+            }
+        }
+
+        async function pullSaveFromGoogleSheets() {
+            const url = (state.gasWebAppUrl || DEFAULT_GAS_EXEC_URL).trim();
+            const targetId = (document.getElementById('inputPlayerId').value || state.playerId).trim();
+            if (!url) {
+                showToast('⚠️ 尚未設定 Google Apps Script 網址');
+                return;
+            }
+            try {
+                showToast(`🔍 正在從試算表讀取玩家 ${targetId}...`);
+                const res = await fetch(`${url}?playerId=${encodeURIComponent(targetId)}`);
+                const data = await res.json();
+                const rawSave = data && (data.saveJson || (data.data && data.data.saveJson));
+                if (data && data.ok && data.found && rawSave) {
+                    localStorage.setItem(STORAGE_KEY, rawSave);
+                    state = loadState();
+                    state.lastCloudSyncTime = new Date().toLocaleString('zh-TW', { hour12: false });
+                    saveState();
+                    refreshAllUI();
+                    openProfileModal();
+                    showToast(`✅ 成功載入玩家 [${state.playerName}] 的雲端存檔！`);
+                } else {
+                    showToast(`⚠️ 試算表中找不到玩家 ID：${targetId}`);
+                }
+            } catch (err) {
+                showToast('❌ 讀取雲端存檔失敗，請確認 Apps Script 已設為「所有人」可存取');
+            }
+        }
+
+        /**
+         * ==========================================
+         * 5. 三層地下城 Canvas 戰鬥引擎
+         * ==========================================
+         */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('canvasWrapper');
+
+        let cw = 400;
+        let ch = 360;
+        let platforms = [];
+
+        function resizeCanvas() {
+            const rect = wrapper.getBoundingClientRect();
+            const scale = 0.75;
+            cw = Math.max(280, Math.floor(rect.width * scale));
+            ch = Math.max(220, Math.floor(rect.height * scale));
+            canvas.width = cw;
+            canvas.height = ch;
+
+            const usableTop = 44;
+            const usableBottom = ch - 76;
+            const span = usableBottom - usableTop;
+            platforms = [
+                { y: usableTop + span * 0.25, x1: cw * 0.08, x2: cw * 0.92 },
+                { y: usableTop + span * 0.60, x1: cw * 0.05, x2: cw * 0.95 },
+                { y: usableBottom, x1: 0, x2: cw }
+            ];
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        const hero = { x: 100, y: 100, dir: 1, tier: 1, attackTimer: 0, jumpAnim: 0, swingAnim: 0 };
+        let monsters = [];
+        let boss = null;
+        let defenseMode = null;
+        let damageNumbers = [];
+        let particles = [];
+        let lightnings = [];
+        let meteors = [];
+        let slashes = [];
+        let icicles = [];
+        let shadowClones = [];
+        let holyBeams = [];
+        let acidZones = [];
+        let blackHole = null;
+        let drops = [];
+        let screenShake = 0;
+
+        function spawnMonster(forceTier = null, isBountyTarget = false) {
+            if (boss || platforms.length === 0) return;
+            const tier = forceTier !== null ? forceTier : Math.floor(Math.random() * platforms.length);
+            const plat = platforms[tier];
+            const floorScale = Math.pow(1.38, state.floor - 1);
+
+            if (isBountyTarget) {
+                const tpl = BOUNTY_TEMPLATES[state.bounty.templateIdx % BOUNTY_TEMPLATES.length];
+                const maxHp = Math.floor(55 * floorScale * tpl.hpMult);
+                monsters.push({
+                    id: Math.random(),
+                    codexId: tpl.id,
+                    name: tpl.prefix + tpl.name,
+                    color: tpl.color,
+                    accent: tpl.accent,
+                    size: 28,
+                    tier,
+                    x: plat.x1 + 25 + Math.random() * Math.max(10, plat.x2 - plat.x1 - 50),
+                    y: plat.y,
+                    vx: (Math.random() < 0.5 ? -1 : 1) * 18,
+                    hp: maxHp,
+                    maxHp,
+                    hitFlash: 0,
+                    freezeTimer: 0,
+                    acidVulnTimer: 0,
+                    isBounty: true,
+                    bountyTpl: tpl
+                });
+                return;
+            }
+
+            const type = MONSTER_TYPES[Math.floor(Math.random() * MONSTER_TYPES.length)];
+            const maxHp = Math.floor(45 * floorScale * type.hpMult);
+            monsters.push({
+                id: Math.random(),
+                codexId: type.id,
+                name: type.name,
+                color: type.color,
+                accent: type.accent,
+                size: type.size,
+                tier,
+                x: plat.x1 + 20 + Math.random() * Math.max(10, plat.x2 - plat.x1 - 40),
+                y: plat.y,
+                vx: (Math.random() < 0.5 ? -1 : 1) * (12 + Math.random() * 14),
+                hp: maxHp,
+                maxHp,
+                hitFlash: 0,
+                freezeTimer: 0,
+                acidVulnTimer: 0,
+                isBounty: false
+            });
+        }
+
+        function startBossBattle() {
+            if (boss || defenseMode || platforms.length === 0) return;
+            monsters = [];
+            const floorScale = Math.pow(1.42, state.floor - 1);
+            const maxHp = Math.floor(650 * floorScale);
+            const bossIdx = (state.floor - 1) % BOSS_CATALOG.length;
+            const bossDef = BOSS_CATALOG[bossIdx];
+            const midPlat = platforms[1];
+
+            boss = {
+                codexId: bossDef.id,
+                name: bossDef.name,
+                tier: 1,
+                x: cw * 0.65,
+                y: midPlat.y,
+                hp: maxHp,
+                maxHp,
+                timer: 30.0,
+                hitFlash: 0,
+                freezeTimer: 0,
+                acidVulnTimer: 0
+            };
+
+            const banner = document.getElementById('specialBannerContainer');
+            banner.classList.remove('hidden', 'border-cyan-500');
+            banner.classList.add('border-red-500/80');
+            document.getElementById('specialBannerTitle').className = 'text-red-400';
+            document.getElementById('specialBannerTitle').textContent = `💀 B${state.floor}F 首領：${bossDef.name}`;
+            document.getElementById('bossBtnText').textContent = '首領戰中';
+            document.getElementById('bossBtn').disabled = true;
+            screenShake = 8;
+            audio.playExplosion();
+        }
+
+        function endBossBattle(victory) {
+            const defeatedBossId = boss ? boss.codexId : null;
+            boss = null;
+            document.getElementById('specialBannerContainer').classList.add('hidden');
+            document.getElementById('bossBtn').disabled = false;
+            document.getElementById('bossBtnText').textContent = '首領';
+
+            if (victory) {
+                if (defeatedBossId) unlockCodexEntry('monsters', defeatedBossId);
+                state.floor++;
+                if (state.floor > state.maxFloor) state.maxFloor = state.floor;
+                HERO_DATA.forEach(h => {
+                    if (state.maxFloor >= h.unlockFloor) unlockCodexEntry('heroes', h.id);
+                });
+                state.killsInFloor = 0;
+                addQuestProgress('q_boss', 1);
+                audio.playLevelUp();
+                showToast(`🎉 突破至地下 B${state.floor}F！`);
+                renderHeroRoster();
+                if (state.autoCloudSync) pushSaveToGoogleSheets(true);
+            } else {
+                state.killsInFloor = 0;
+                showToast('⚠️ 挑戰首領超時，繼續在當前樓層練功！');
+            }
+
+            for (let i = 0; i < 8; i++) spawnMonster();
+            saveState();
+        }
+
+        function startDefenseMode() {
+            if (boss || defenseMode) {
+                showToast('⚠️ 目前正在進行特殊戰鬥中！');
+                return;
+            }
+            monsters = [];
+            const targetKills = 30 + state.floor * 3;
+            defenseMode = { timer: 30.0, kills: 0, targetKills };
+
+            const banner = document.getElementById('specialBannerContainer');
+            banner.classList.remove('hidden', 'border-red-500/80');
+            banner.classList.add('border-cyan-500');
+            document.getElementById('specialBannerTitle').className = 'text-cyan-300';
+            document.getElementById('specialBannerTitle').textContent = `🛡️ 加班防禦戰：擊殺 0/${targetKills}`;
+            document.getElementById('bossBtn').disabled = true;
+
+            for (let i = 0; i < 14; i++) spawnMonster();
+            audio.playLightning();
+            showToast('🛡️ 無盡怪物潮來襲！30 秒內達成擊殺目標拿獎勵！');
+        }
+
+        function endDefenseMode() {
+            if (!defenseMode) return;
+            const success = defenseMode.kills >= defenseMode.targetKills;
+            const kills = defenseMode.kills;
+            defenseMode = null;
+
+            document.getElementById('specialBannerContainer').classList.add('hidden');
+            document.getElementById('bossBtn').disabled = false;
+            monsters = [];
+            for (let i = 0; i < 8; i++) spawnMonster();
+
+            if (success) {
+                const stats = getStats();
+                const floorScale = Math.pow(1.32, state.floor - 1);
+                const bonusGold = Math.floor(350 * floorScale * stats.goldMult);
+                const bonusCrystals = 15 + Math.floor(state.floor * 1.5);
+                state.gold += bonusGold;
+                state.crystals += bonusCrystals;
+                const emptyIdx = state.dolls.findIndex(d => d === null);
+                if (emptyIdx !== -1) {
+                    state.dolls[emptyIdx] = 2;
+                    unlockCodexEntry('dolls', '2');
+                }
+                audio.playLevelUp();
+                showToast(`🏆 防禦成功 (${kills}殺)！獲得 🪙${formatNumber(bonusGold)} 與 💠${bonusCrystals}！`);
+            } else {
+                showToast(`🛡️ 防禦結束 (擊殺 ${kills})，保留所有打怪收益！`);
+            }
+            renderSubtabContent('defense');
+            saveState();
+        }
+
+        function spawnDamageNumber(x, y, amount, isCrit, colorOverride = null) {
+            if (damageNumbers.length > 75) damageNumbers.shift();
+            damageNumbers.push({
+                x: x + (Math.random() - 0.5) * 28,
+                y: y - 14 - Math.random() * 14,
+                vy: -40 - Math.random() * 22,
+                text: formatNumber(amount),
+                isCrit,
+                color: colorOverride,
+                life: 0.85
+            });
+        }
+
+        function spawnParticles(x, y, color, count = 8, speed = 70) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = (0.3 + Math.random() * 0.7) * speed;
+                particles.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * spd,
+                    vy: Math.sin(angle) * spd - 20,
+                    size: 2 + Math.random() * 3,
+                    color,
+                    life: 0.35 + Math.random() * 0.25
+                });
+            }
+        }
+
+        function spawnDrop(x, y, goldVal, expVal) {
+            drops.push({
+                x,
+                y: y - 8,
+                vx: (Math.random() - 0.5) * 60,
+                vy: -60 - Math.random() * 40,
+                gold: goldVal,
+                exp: expVal,
+                timer: 0.35
+            });
+        }
+
+        function damageTarget(target, rawDmg, isSkill = false, colorOverride = null) {
+            if (!target || target.hp <= 0) return;
+            const stats = getStats();
+            const isCrit = Math.random() < stats.critRate;
+            const vulnMult = target.acidVulnTimer > 0 ? 1.25 : 1.0;
+            const finalDmg = Math.max(1, Math.floor(rawDmg * vulnMult * (isCrit ? stats.critDmg : 1)));
+
+            target.hp -= finalDmg;
+            target.hitFlash = 0.09;
+            spawnDamageNumber(target.x, target.y - 16, finalDmg, isCrit, colorOverride || (isSkill ? null : stats.wStats.def.bladeColor));
+
+            if (!isSkill) audio.playHit(isCrit);
+
+            if (target.hp <= 0) {
+                if (target.codexId) unlockCodexEntry('monsters', target.codexId);
+
+                const floorRewardScale = Math.pow(1.32, state.floor - 1);
+                const isBossTarget = target === boss;
+                let goldReward = Math.floor((isBossTarget ? 120 : 12) * floorRewardScale * stats.goldMult);
+                const expReward = Math.floor((isBossTarget ? 150 : 16) * floorRewardScale);
+
+                if (target.isBounty && target.bountyTpl) {
+                    goldReward *= target.bountyTpl.goldMult;
+                    state.bounty.active = false;
+                    state.bounty.completed = true;
+                    state.totalBounties++;
+                    showToast(`🎯 已擊殺懸賞目標【${target.name}】！請至支線領賞`);
+                    renderSubtabContent('bounty');
+                }
+
+                spawnParticles(target.x, target.y - 10, isBossTarget ? '#f97316' : target.accent, isBossTarget ? 28 : 10, 90);
+                spawnDrop(target.x, target.y, goldReward, expReward);
+
+                state.totalKills++;
+                addQuestProgress('q_kill', 1);
+
+                if (isBossTarget) {
+                    endBossBattle(true);
+                } else {
+                    monsters = monsters.filter(m => m !== target);
+                    if (defenseMode) {
+                        defenseMode.kills++;
+                        spawnMonster();
+                    } else {
+                        state.killsInFloor++;
+                        if (state.killsInFloor >= 10) {
+                            state.killsInFloor = 10;
+                            startBossBattle();
+                        } else {
+                            spawnMonster();
+                        }
+                    }
+                }
+            }
+        }
+
+        function triggerSkillById(skillId, manual = false) {
+            const def = SKILL_CATALOG.find(s => s.id === skillId);
+            const lvl = state.unlockedSkills[skillId];
+            if (!def || !lvl) return;
+
+            if ((skillTimers[skillId] || 0) > 0) return;
+            if (state.mp < def.mpCost) {
+                if (manual) showToast('💧 魔力 (MP) 不足！');
+                return;
+            }
+
+            state.mp -= def.mpCost;
+            skillTimers[skillId] = def.cd;
+            state.totalSkills++;
+            addQuestProgress('q_skill', 1);
+
+            const stats = getStats();
+            const skillScale = 1 + (lvl - 1) * 0.35;
+            const baseSkillDmg = stats.atk * def.mult * skillScale * stats.skillPowerMult;
+            const allTargets = boss ? [boss] : [...monsters];
+
+            switch (skillId) {
+                case 'lightning':
+                    audio.playLightning();
+                    screenShake = 6;
+                    allTargets.forEach(t => {
+                        for (let h = 0; h < 3; h++) {
+                            setTimeout(() => {
+                                if (t.hp > 0) {
+                                    damageTarget(t, baseSkillDmg / 3, true, '#38bdf8');
+                                    lightnings.push({ x1: t.x + (Math.random() - 0.5) * 60, y1: 0, x2: t.x, y2: t.y - 10, life: 0.22 });
+                                    spawnParticles(t.x, t.y - 12, '#38bdf8', 5, 65);
+                                }
+                            }, h * 65);
+                        }
+                    });
+                    break;
+                case 'meteor':
+                    audio.playExplosion();
+                    screenShake = 10;
+                    const mCount = Math.min(5, Math.max(3, allTargets.length));
+                    for (let i = 0; i < mCount; i++) {
+                        const target = allTargets[i % allTargets.length] || { x: cw * (0.2 + i * 0.15), y: platforms[1].y };
+                        meteors.push({ x: target.x - 90, y: -30 - i * 25, tx: target.x, ty: target.y, speed: 420, dmg: baseSkillDmg * 0.55 });
+                    }
+                    break;
+                case 'slash':
+                    audio.playSlash();
+                    screenShake = 4;
+                    slashes.push({ x: hero.x, y: hero.y - 12, dir: hero.dir, life: 0.3 });
+                    allTargets.forEach(t => {
+                        if (Math.abs(t.tier - hero.tier) <= 1) {
+                            damageTarget(t, baseSkillDmg, true, '#d8b4fe');
+                            spawnParticles(t.x, t.y - 10, '#c084fc', 6, 55);
+                        }
+                    });
+                    break;
+                case 'blizzard':
+                    audio.playFrost();
+                    screenShake = 5;
+                    for (let i = 0; i < 14; i++) icicles.push({ x: 15 + Math.random() * (cw - 30), y: -20 - Math.random() * 80, vy: 340 + Math.random() * 120, life: 0.75 });
+                    allTargets.forEach(t => {
+                        t.freezeTimer = 2.5;
+                        damageTarget(t, baseSkillDmg, true, '#7dd3fc');
+                        spawnParticles(t.x, t.y - 12, '#bae6fd', 8, 55);
+                    });
+                    break;
+                case 'judgment':
+                    audio.playHoly();
+                    screenShake = 7;
+                    state.hp = Math.min(state.maxHp, state.hp + state.maxHp * 0.3);
+                    spawnParticles(hero.x, hero.y - 14, '#4ade80', 12, 60);
+                    for (let b = 0; b < 4; b++) holyBeams.push({ x: cw * (0.18 + b * 0.21), width: 22, life: 0.55 });
+                    allTargets.forEach(t => {
+                        damageTarget(t, baseSkillDmg, true, '#fde047');
+                        spawnParticles(t.x, t.y - 15, '#fef08a', 7, 70);
+                    });
+                    break;
+                case 'acid':
+                    audio.playAcid();
+                    platforms.forEach((plat, idx) => {
+                        const zx = plat.x1 + 25 + Math.random() * Math.max(10, plat.x2 - plat.x1 - 90);
+                        acidZones.push({ tier: idx, x: zx, y: plat.y, width: 75, life: 4.0, tickTimer: 0, tickDmg: baseSkillDmg * 0.24 });
+                    });
+                    break;
+                case 'blackhole':
+                    audio.playBlackHole();
+                    screenShake = 9;
+                    blackHole = { x: cw * 0.5, y: ch * 0.44, life: 1.8, maxLife: 1.8, finalDmg: baseSkillDmg };
+                    break;
+                case 'overload':
+                    audio.playLightning();
+                    screenShake = 6;
+                    [0, 2].forEach((platIdx, idx) => {
+                        const plat = platforms[platIdx] || platforms[1];
+                        shadowClones.push({
+                            x: idx === 0 ? plat.x1 + 10 : plat.x2 - 10,
+                            y: plat.y,
+                            dir: idx === 0 ? 1 : -1,
+                            speed: 360,
+                            life: 0.65,
+                            dmgPerHit: baseSkillDmg * 0.38,
+                            color: '#fbbf24',
+                            hitSet: new Set()
+                        });
+                    });
+                    break;
+            }
+        }
+
+        let lastTime = performance.now();
+        let uiSyncTimer = 0;
+        let autoSaveTimer = 0;
+        let autoCloudSyncTimer = 0;
+
+        function update(dt) {
+            state.shiftSeconds += dt;
+            const stats = getStats();
+
+            state.mp = Math.min(state.maxMp, state.mp + 14 * dt);
+            state.hp = Math.min(state.maxHp, state.hp + 3 * dt);
+
+            Object.keys(skillTimers).forEach(id => {
+                if (skillTimers[id] > 0) skillTimers[id] = Math.max(0, skillTimers[id] - dt);
+            });
+
+            if (state.autoSkill && (monsters.length > 0 || boss)) {
+                state.equippedSkills.forEach(skId => {
+                    if (skId && (skillTimers[skId] || 0) <= 0) {
+                        const def = SKILL_CATALOG.find(s => s.id === skId);
+                        if (def && state.mp >= def.mpCost) triggerSkillById(skId, false);
+                    }
+                });
+            }
+
+            if (state.mine.activeRoute && !state.mine.readyToClaim && Date.now() >= state.mine.endTime) {
+                state.mine.readyToClaim = true;
+                showToast('⛏️ 深淵礦坑開採完成！可領取礦石結晶');
+                renderSubtabContent('mine');
+            }
+
+            if (defenseMode) {
+                defenseMode.timer -= dt;
+                const bar = document.getElementById('specialBannerBar');
+                const timerEl = document.getElementById('specialBannerTimer');
+                const titleEl = document.getElementById('specialBannerTitle');
+                if (bar && timerEl && titleEl) {
+                    bar.style.width = `${Math.max(0, (defenseMode.timer / 30) * 100)}%`;
+                    timerEl.textContent = `${Math.max(0, defenseMode.timer).toFixed(1)}s`;
+                    titleEl.textContent = `🛡️ 加班防禦戰：擊殺 ${defenseMode.kills}/${defenseMode.targetKills}`;
+                }
+                if (defenseMode.timer <= 0) endDefenseMode();
+            }
+
+            const targetList = boss ? [boss] : monsters;
+            if (targetList.length > 0 && platforms.length > 0) {
+                let nearest = targetList[0];
+                let bestScore = Infinity;
+                targetList.forEach(m => {
+                    const dist = Math.abs(m.x - hero.x) + Math.abs(m.tier - hero.tier) * 140;
+                    if (dist < bestScore) { bestScore = dist; nearest = m; }
+                });
+
+                if (nearest.tier !== hero.tier && hero.jumpAnim <= 0) {
+                    hero.tier = nearest.tier;
+                    hero.y = platforms[hero.tier].y;
+                    hero.jumpAnim = 0.25;
+                    spawnParticles(hero.x, hero.y, '#94a3b8', 4, 30);
+                }
+
+                const dx = nearest.x - hero.x;
+                if (Math.abs(dx) > 26) {
+                    hero.dir = dx > 0 ? 1 : -1;
+                    hero.x += hero.dir * 105 * dt;
+                } else {
+                    hero.dir = dx >= 0 ? 1 : -1;
+                    hero.attackTimer += dt;
+                    if (hero.attackTimer >= stats.atkInterval) {
+                        hero.attackTimer = 0;
+                        hero.swingAnim = 0.16;
+                        spawnParticles(hero.x + hero.dir * 16, hero.y - 12, stats.wStats.def.bladeColor, 3, 40);
+                        targetList.forEach(m => {
+                            if (m.tier === hero.tier && Math.abs(m.x - hero.x) < 60) {
+                                damageTarget(m, stats.atk, false);
+                            }
+                        });
+                    }
+                }
+            }
+
+            if (hero.jumpAnim > 0) hero.jumpAnim = Math.max(0, hero.jumpAnim - dt);
+            if (hero.swingAnim > 0) hero.swingAnim = Math.max(0, hero.swingAnim - dt);
+
+            monsters.forEach(m => {
+                const plat = platforms[m.tier];
+                if (!plat) return;
+                if (m.freezeTimer > 0) m.freezeTimer = Math.max(0, m.freezeTimer - dt);
+                else {
+                    m.x += m.vx * dt;
+                    if (m.x < plat.x1 + 12) { m.x = plat.x1 + 12; m.vx *= -1; }
+                    if (m.x > plat.x2 - 12) { m.x = plat.x2 - 12; m.vx *= -1; }
+                }
+                if (m.acidVulnTimer > 0) m.acidVulnTimer = Math.max(0, m.acidVulnTimer - dt);
+                if (m.hitFlash > 0) m.hitFlash = Math.max(0, m.hitFlash - dt);
+            });
+
+            if (boss) {
+                boss.timer -= dt;
+                if (boss.freezeTimer > 0) boss.freezeTimer = Math.max(0, boss.freezeTimer - dt);
+                if (boss.acidVulnTimer > 0) boss.acidVulnTimer = Math.max(0, boss.acidVulnTimer - dt);
+                if (boss.hitFlash > 0) boss.hitFlash = Math.max(0, boss.hitFlash - dt);
+                if (boss.timer <= 0) endBossBattle(false);
+            }
+
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                const met = meteors[i];
+                const angle = Math.atan2(met.ty - met.y, met.tx - met.x);
+                met.x += Math.cos(angle) * met.speed * dt;
+                met.y += Math.sin(angle) * met.speed * dt;
+                spawnParticles(met.x, met.y, '#f97316', 1, 20);
+                if (met.y >= met.ty - 5) {
+                    spawnParticles(met.tx, met.ty - 10, '#facc15', 14, 95);
+                    const targets = boss ? [boss] : [...monsters];
+                    targets.forEach(t => { if (Math.hypot(t.x - met.tx, t.y - met.ty) < 78) damageTarget(t, met.dmg, true, '#fb923c'); });
+                    meteors.splice(i, 1);
+                }
+            }
+
+            for (let i = icicles.length - 1; i >= 0; i--) {
+                icicles[i].y += icicles[i].vy * dt;
+                icicles[i].life -= dt;
+                if (icicles[i].life <= 0 || icicles[i].y > ch) icicles.splice(i, 1);
+            }
+
+            for (let i = shadowClones.length - 1; i >= 0; i--) {
+                const sc = shadowClones[i];
+                sc.x += sc.dir * sc.speed * dt;
+                sc.life -= dt;
+                const targets = boss ? [boss] : [...monsters];
+                targets.forEach(t => {
+                    if (!sc.hitSet.has(t) && Math.abs(t.x - sc.x) < 28 && Math.abs(t.y - sc.y) < 35) {
+                        sc.hitSet.add(t);
+                        damageTarget(t, sc.dmgPerHit, true, sc.color || '#a5b4fc');
+                    }
+                });
+                if (sc.life <= 0) shadowClones.splice(i, 1);
+            }
+
+            holyBeams.forEach(b => { b.life -= dt; });
+            holyBeams = holyBeams.filter(b => b.life > 0);
+
+            for (let i = acidZones.length - 1; i >= 0; i--) {
+                const az = acidZones[i];
+                az.life -= dt;
+                az.tickTimer += dt;
+                if (az.tickTimer >= 0.5) {
+                    az.tickTimer = 0;
+                    const targets = boss ? [boss] : [...monsters];
+                    targets.forEach(t => {
+                        if (t.tier === az.tier && t.x >= az.x - 10 && t.x <= az.x + az.width + 10) {
+                            t.acidVulnTimer = 1.5;
+                            damageTarget(t, az.tickDmg, true, '#a3e635');
+                        }
+                    });
+                }
+                if (az.life <= 0) acidZones.splice(i, 1);
+            }
+
+            if (blackHole) {
+                blackHole.life -= dt;
+                monsters.forEach(m => { m.x += (blackHole.x - m.x) * 2.4 * dt; });
+                if (blackHole.life <= 0) {
+                    audio.playExplosion();
+                    screenShake = 12;
+                    spawnParticles(blackHole.x, blackHole.y, '#e879f9', 30, 120);
+                    const targets = boss ? [boss] : [...monsters];
+                    targets.forEach(t => damageTarget(t, blackHole.finalDmg, true, '#f0abfc'));
+                    blackHole = null;
+                }
+            }
+
+            lightnings.forEach(l => { l.life -= dt; });
+            lightnings = lightnings.filter(l => l.life > 0);
+            slashes.forEach(s => { s.x += s.dir * 260 * dt; s.life -= dt; });
+            slashes = slashes.filter(s => s.life > 0);
+
+            damageNumbers.forEach(d => { d.y += d.vy * dt; d.vy *= 0.94; d.life -= dt; });
+            damageNumbers = damageNumbers.filter(d => d.life > 0);
+
+            particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 180 * dt; p.life -= dt; });
+            particles = particles.filter(p => p.life > 0);
+
+            for (let i = drops.length - 1; i >= 0; i--) {
+                const dr = drops[i];
+                dr.timer -= dt;
+                if (dr.timer > 0) {
+                    dr.x += dr.vx * dt;
+                    dr.y += dr.vy * dt;
+                    dr.vy += 240 * dt;
+                } else {
+                    const dx = hero.x - dr.x;
+                    const dy = (hero.y - 12) - dr.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 14) {
+                        state.gold += dr.gold;
+                        gainExp(dr.exp);
+                        audio.playCoin();
+                        drops.splice(i, 1);
+                    } else {
+                        dr.x += (dx / dist) * 280 * dt;
+                        dr.y += (dy / dist) * 280 * dt;
+                    }
+                }
+            }
+
+            if (screenShake > 0) screenShake = Math.max(0, screenShake - 35 * dt);
+
+            uiSyncTimer += dt;
+            if (uiSyncTimer >= 0.12) { uiSyncTimer = 0; syncTopAndBattleUI(); }
+
+            autoSaveTimer += dt;
+            if (autoSaveTimer >= 5.0) { autoSaveTimer = 0; saveState(); }
+
+            if (state.autoCloudSync) {
+                autoCloudSyncTimer += dt;
+                if (autoCloudSyncTimer >= 45.0) {
+                    autoCloudSyncTimer = 0;
+                    pushSaveToGoogleSheets(true);
+                }
+            }
+        }
+
+        function gainExp(amount) {
+            const prevLevel = state.heroLevel;
+            state.exp += amount;
+            let req = getRequiredExp(state.heroLevel);
+            while (state.exp >= req) {
+                state.exp -= req;
+                state.heroLevel++;
+                state.maxHp = 100 + (state.heroLevel - 1) * 15;
+                state.hp = state.maxHp;
+                req = getRequiredExp(state.heroLevel);
+                spawnParticles(hero.x, hero.y - 15, '#34d399', 16, 80);
+            }
+            if (state.heroLevel > prevLevel && state.autoCloudSync) {
+                pushSaveToGoogleSheets(true);
+            }
+        }
+
+        function render() {
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+            }
+
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, ch);
+            bgGrad.addColorStop(0, '#0d111a');
+            bgGrad.addColorStop(0.5, '#151b29');
+            bgGrad.addColorStop(1, '#0b0e14');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, cw, ch);
+
+            ctx.fillStyle = '#1b2233';
+            for (let x = 24; x < cw; x += 88) {
+                ctx.fillRect(x, 0, 18, ch);
+                const flicker = Math.sin(performance.now() * 0.015 + x) * 2;
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(x + 7, 72 + flicker, 4, 4);
+                ctx.fillStyle = '#1b2233';
+            }
+
+            if (blackHole) {
+                const pulse = Math.sin(performance.now() * 0.025) * 4;
+                ctx.beginPath();
+                ctx.arc(blackHole.x, blackHole.y, 34 + pulse, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(147, 51, 234, 0.35)';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(blackHole.x, blackHole.y, 18, 0, Math.PI * 2);
+                ctx.fillStyle = '#09050f';
+                ctx.fill();
+                ctx.strokeStyle = '#e879f9';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+
+            platforms.forEach(p => {
+                const w = p.x2 - p.x1;
+                ctx.fillStyle = '#2c3345';
+                ctx.fillRect(p.x1, p.y, w, 10);
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(p.x1, p.y, w, 3);
+            });
+
+            acidZones.forEach(az => {
+                ctx.fillStyle = 'rgba(132, 204, 22, 0.45)';
+                ctx.fillRect(az.x, az.y - 6, az.width, 6);
+            });
+
+            monsters.forEach(m => drawPixelMonster(m));
+            if (boss) drawPixelBoss(boss);
+
+            shadowClones.forEach(sc => {
+                ctx.save();
+                ctx.globalAlpha = 0.65;
+                ctx.fillStyle = sc.color || '#6366f1';
+                ctx.fillRect(sc.x - 7, sc.y - 22, 14, 22);
+                ctx.restore();
+            });
+
+            drawPixelHero();
+
+            holyBeams.forEach(b => {
+                ctx.fillStyle = `rgba(253, 224, 71, ${0.4 * Math.min(1, b.life * 2)})`;
+                ctx.fillRect(b.x - b.width / 2, 0, b.width, ch);
+            });
+
+            lightnings.forEach(l => {
+                ctx.strokeStyle = '#e0f2fe';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(l.x1, l.y1);
+                for (let s = 1; s < 5; s++) {
+                    const t = s / 5;
+                    ctx.lineTo(l.x1 + (l.x2 - l.x1) * t + (Math.random() - 0.5) * 28, l.y1 + (l.y2 - l.y1) * t);
+                }
+                ctx.lineTo(l.x2, l.y2);
+                ctx.stroke();
+            });
+
+            icicles.forEach(ic => {
+                ctx.fillStyle = '#bae6fd';
+                ctx.beginPath();
+                ctx.moveTo(ic.x - 4, ic.y);
+                ctx.lineTo(ic.x + 4, ic.y);
+                ctx.lineTo(ic.x, ic.y + 16);
+                ctx.fill();
+            });
+
+            meteors.forEach(met => {
+                ctx.fillStyle = '#f97316';
+                ctx.beginPath();
+                ctx.arc(met.x, met.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(met.x, met.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            slashes.forEach(s => {
+                ctx.strokeStyle = '#d8b4fe';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 22, s.dir > 0 ? -0.9 : Math.PI - 0.9, s.dir > 0 ? 0.9 : Math.PI + 0.9);
+                ctx.stroke();
+            });
+
+            drops.forEach(dr => {
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(dr.x - 3, dr.y - 3, 6, 6);
+            });
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+
+            damageNumbers.forEach(d => {
+                ctx.save();
+                const scale = d.isCrit ? 1.25 : 1.0;
+                ctx.font = `900 ${Math.floor(11 * scale)}px "Press Start 2P", monospace`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#09070d';
+                ctx.fillText(d.text, d.x - 1.5, d.y);
+                ctx.fillText(d.text, d.x + 1.5, d.y);
+                ctx.fillText(d.text, d.x, d.y - 1.5);
+                ctx.fillText(d.text, d.x, d.y + 1.5);
+                ctx.fillStyle = d.isCrit ? '#ff4d1c' : (d.color || '#facc15');
+                ctx.fillText(d.text, d.x, d.y);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        function drawPixelMonster(m) {
+            const s = m.size;
+            const bounce = m.freezeTimer > 0 ? 0 : Math.abs(Math.sin(performance.now() * 0.008 + m.id * 10)) * 3;
+            const x = Math.floor(m.x - s / 2);
+            const y = Math.floor(m.y - s - bounce);
+
+            if (m.isBounty) {
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x - 3, y - 3, s + 6, s + 6);
+            }
+
+            ctx.fillStyle = m.hitFlash > 0 ? '#ffffff' : (m.freezeTimer > 0 ? '#7dd3fc' : m.color);
+            ctx.fillRect(x, y, s, s);
+            ctx.fillStyle = m.hitFlash > 0 ? '#ffffff' : m.accent;
+            ctx.fillRect(x + 2, y + 2, s - 4, 4);
+
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(x + 4, y + 7, 3, 3);
+            ctx.fillRect(x + s - 7, y + 7, 3, 3);
+
+            const hpPct = Math.max(0, m.hp / m.maxHp);
+            const barW = m.isBounty ? 32 : 22;
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(m.x - barW / 2, y - 6, barW, 3);
+            ctx.fillStyle = m.isBounty ? '#fbbf24' : '#ef4444';
+            ctx.fillRect(m.x - barW / 2, y - 6, barW * hpPct, 3);
+        }
+
+        function drawPixelBoss(b) {
+            const s = 48;
+            const x = Math.floor(b.x - s / 2);
+            const y = Math.floor(b.y - s);
+            ctx.fillStyle = b.hitFlash > 0 ? '#ffffff' : '#451a03';
+            ctx.fillRect(x, y, s, s);
+            ctx.fillStyle = b.hitFlash > 0 ? '#ffffff' : '#ea580c';
+            ctx.fillRect(x + 4, y + 4, s - 8, s - 8);
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(x - 4, y - 8, 8, 12);
+            ctx.fillRect(x + s - 4, y - 8, 8, 12);
+            ctx.fillRect(x + 16, y + 18, 16, 12);
+        }
+
+        function drawPixelHero() {
+            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const wStats = getEquippedWeaponStats();
+            const jumpOffset = hero.jumpAnim > 0 ? Math.sin((hero.jumpAnim / 0.25) * Math.PI) * 26 : 0;
+            const hx = Math.floor(hero.x);
+            const hy = Math.floor(hero.y - jumpOffset);
+
+            ctx.save();
+            ctx.translate(hx, hy);
+            ctx.scale(hero.dir, 1);
+
+            const capeWave = Math.sin(performance.now() * 0.015) * 2;
+            ctx.fillStyle = heroObj.capeColor;
+            ctx.fillRect(-11, -18 + capeWave, 7, 15);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-6, -20, 12, 20);
+            ctx.fillStyle = heroObj.color;
+            ctx.fillRect(-7, -23, 14, 8);
+
+            ctx.fillStyle = '#fed7aa';
+            ctx.fillRect(-3, -16, 8, 6);
+            ctx.fillStyle = heroObj.color;
+            ctx.fillRect(2, -14, 3, 2);
+
+            ctx.save();
+            ctx.translate(4, -10);
+            ctx.rotate(hero.swingAnim > 0 ? 1.15 : -0.35);
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(0, -2, 3, 5);
+            ctx.fillStyle = wStats.def.glowColor;
+            ctx.fillRect(-2, -3, 7, 2);
+            ctx.fillStyle = wStats.def.bladeColor;
+            if (wStats.def.id === 'w_pickaxe' || wStats.def.id === 'w_thunder_hammer') {
+                ctx.fillRect(0, -14, 3, 12);
+                ctx.fillRect(-4, -15, 11, 4);
+            } else if (wStats.def.id === 'w_holy_spear' || wStats.def.id === 'w_chaos_sword') {
+                ctx.fillRect(0, -20, 4, 18);
+                ctx.fillStyle = wStats.def.glowColor;
+                ctx.fillRect(1, -18, 2, 14);
+            } else {
+                ctx.fillRect(0, -15, 3, 13);
+            }
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        /**
+         * ==========================================
+         * 6. 分頁渲染與互動邏輯
+         * ==========================================
+         */
+        function renderEquippedSkillBar() {
+            const bar = document.getElementById('equippedSkillBar');
+            bar.innerHTML = state.equippedSkills.map((skId, slotIdx) => {
+                if (!skId) {
+                    return `
+                        <button class="rpg-btn w-10 h-10 rounded-lg flex flex-col items-center justify-center opacity-50 border-dashed" onclick="switchToTab('skills')">
+                            <span class="text-xs text-gray-500">+</span>
+                            <span class="text-[8px] text-gray-500">空槽</span>
+                        </button>
+                    `;
+                }
+                const def = SKILL_CATALOG.find(s => s.id === skId);
+                return `
+                    <button id="eqBtn_${slotIdx}" data-skill-id="${skId}" class="rpg-btn relative w-10 h-10 rounded-lg flex flex-col items-center justify-center overflow-hidden">
+                        <span class="text-sm leading-none">${def.icon}</span>
+                        <span class="text-[8px] font-bold ${def.color} mt-0.5 truncate w-full px-0.5 text-center">${def.name}</span>
+                        <div id="eqCd_${slotIdx}" class="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-mono font-bold text-white hidden">0s</div>
+                    </button>
+                `;
+            }).join('');
+
+            bar.querySelectorAll('button[data-skill-id]').forEach(btn => {
+                btn.addEventListener('click', () => triggerSkillById(btn.dataset.skillId, true));
+            });
+        }
+
+        function renderUpgradeList() {
+            const list = document.getElementById('upgradeList');
+            const stats = getStats();
+            updateCodexRedDot();
+            const items = [
+                { key: 'atk', name: '基礎攻擊力', icon: '⚔️', desc: `目前攻擊: ${formatNumber(stats.atk)}` },
+                { key: 'spd', name: '揮砍攻擊速度', icon: '⚡', desc: `攻擊間隔: ${stats.atkInterval.toFixed(2)}s` },
+                { key: 'critRate', name: '暴擊機率', icon: '🎯', desc: `目前機率: ${(stats.critRate * 100).toFixed(0)}%` },
+                { key: 'critDmg', name: '暴擊傷害倍率', icon: '💥', desc: `暴擊倍率: ${Math.round(stats.critDmg * 100)}%` },
+                { key: 'goldGain', name: '加班費加成 (金幣)', icon: '💰', desc: `金幣倍率: ${Math.round(stats.goldMult * 100)}%` }
+            ];
+
+            list.innerHTML = items.map(item => {
+                const lvl = state.upgrades[item.key];
+                const cost = getMultiUpgradeCost(item.key, lvl, buyMultiplier);
+                const canAfford = state.gold >= cost;
+                return `
+                    <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-2 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-8 h-8 rounded bg-[#15121c] border border-[#4c4163] flex items-center justify-center text-base shrink-0">${item.icon}</div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-gray-100 truncate">${item.name}</span>
+                                    <span class="text-[10px] text-amber-400 font-mono">Lv.${lvl}</span>
+                                </div>
+                                <div class="text-[10px] text-gray-400 truncate">${item.desc}</div>
+                            </div>
+                        </div>
+                        <button class="upg-buy-btn rpg-btn rpg-btn-gold px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0 flex flex-col items-end"
+                                data-key="${item.key}" data-cost="${cost}" ${!canAfford ? 'disabled' : ''}>
+                            <span>強化 +${buyMultiplier}</span>
+                            <span class="text-[9px] font-mono">🪙 ${formatNumber(cost)}</span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.upg-buy-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.key;
+                    const cost = Number(btn.dataset.cost);
+                    if (state.gold >= cost) {
+                        state.gold -= cost;
+                        state.upgrades[key] += buyMultiplier;
+                        state.totalUpgrades += buyMultiplier;
+                        audio.playCoin();
+                        renderUpgradeList();
+                        syncTopAndBattleUI();
+                        saveState();
+                    }
+                });
+            });
+        }
+
+        function forgeWeapon(useCrystal = false) {
+            if (useCrystal) {
+                if (state.crystals < 15) {
+                    showToast('💠 技能結晶不足 (需 15 結晶)');
+                    return;
+                }
+                state.crystals -= 15;
+            } else {
+                const cost = getForgeGoldCost();
+                if (state.gold < cost) {
+                    showToast('🪙 金幣不足！');
+                    return;
+                }
+                state.gold -= cost;
+                state.weaponForgeCount++;
+            }
+
+            const pool = useCrystal ? WEAPON_CATALOG.filter(w => w.rarity !== 'common') : WEAPON_CATALOG;
+            const totalWeight = pool.reduce((sum, w) => sum + w.weight, 0);
+            let roll = Math.random() * totalWeight;
+            let chosen = pool[0];
+            for (const w of pool) {
+                roll -= w.weight;
+                if (roll <= 0) { chosen = w; break; }
+            }
+
+            if (!state.ownedWeapons[chosen.id]) {
+                state.ownedWeapons[chosen.id] = { level: 1, stars: 1, shards: 0 };
+                unlockCodexEntry('weapons', chosen.id);
+                showToast(`🎉 鍛造出全新神兵【${chosen.name}】！`);
+            } else {
+                state.ownedWeapons[chosen.id].shards++;
+                const needShards = state.ownedWeapons[chosen.id].stars * 2;
+                if (state.ownedWeapons[chosen.id].shards >= needShards) {
+                    state.ownedWeapons[chosen.id].shards -= needShards;
+                    state.ownedWeapons[chosen.id].stars++;
+                    showToast(`⭐ 【${chosen.name}】升星突破至 ${state.ownedWeapons[chosen.id].stars} 星！`);
+                } else {
+                    showToast(`🔨 獲得【${chosen.name}】碎片 (${state.ownedWeapons[chosen.id].shards}/${needShards})`);
+                }
+            }
+
+            audio.playForge();
+            renderWeaponList();
+            syncTopAndBattleUI();
+            saveState();
+            if (state.autoCloudSync) pushSaveToGoogleSheets(true);
+        }
+
+        function renderWeaponList() {
+            document.getElementById('forgeGoldCost').textContent = formatNumber(getForgeGoldCost());
+            const list = document.getElementById('weaponList');
+
+            list.innerHTML = WEAPON_CATALOG.map(w => {
+                const owned = state.ownedWeapons[w.id];
+                const isEquipped = state.equippedWeapon === w.id;
+                const upgCost = owned ? Math.floor(200 * Math.pow(1.38, owned.level - 1)) : 0;
+                const atkBonusPct = owned
+                    ? Math.round(w.baseAtkPct * (1 + (owned.level - 1) * 0.18) * (1 + (owned.stars - 1) * 0.35) * 100)
+                    : Math.round(w.baseAtkPct * 100);
+
+                return `
+                    <div class="bg-[#211c2b] border-2 ${isEquipped ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col justify-between gap-1.5 ${!owned ? 'opacity-55' : ''}">
+                        <div>
+                            <div class="flex items-center justify-between gap-1">
+                                <div class="flex items-center gap-1 min-w-0">
+                                    <span class="text-lg">${w.icon}</span>
+                                    <span class="text-[11px] font-bold rarity-${w.rarity} truncate">${w.name}</span>
+                                </div>
+                                ${owned ? `<span class="text-[9px] text-amber-300 font-mono shrink-0">Lv.${owned.level} ★${owned.stars}</span>` : `<span class="text-[9px] text-gray-500">未獲得</span>`}
+                            </div>
+                            <div class="text-[10px] text-emerald-300 mt-1">攻擊 +${atkBonusPct}% | 暴擊 +${Math.round(w.critRate * 100)}%</div>
+                        </div>
+
+                        ${owned ? `
+                            <div class="flex gap-1 mt-1">
+                                <button class="eq-wep-btn rpg-btn ${isEquipped ? 'rpg-btn-gold' : ''} flex-1 py-1 rounded text-[10px] font-bold" data-id="${w.id}">
+                                    ${isEquipped ? '裝備中' : '裝備'}
+                                </button>
+                                <button class="upg-wep-btn rpg-btn flex-1 py-1 rounded text-[10px] font-bold text-cyan-300" data-id="${w.id}" data-cost="${upgCost}" ${state.gold < upgCost ? 'disabled' : ''}>
+                                    強化 🪙${formatNumber(upgCost)}
+                                </button>
+                            </div>
+                        ` : `<div class="text-[9px] text-center py-1 bg-black/40 rounded text-gray-500">透過矮人鍛造爐取得</div>`}
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.eq-wep-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.equippedWeapon = btn.dataset.id;
+                    audio.playCoin();
+                    renderWeaponList();
+                    syncTopAndBattleUI();
+                    saveState();
+                });
+            });
+
+            list.querySelectorAll('.upg-wep-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const cost = Number(btn.dataset.cost);
+                    if (state.gold >= cost && state.ownedWeapons[id]) {
+                        state.gold -= cost;
+                        state.ownedWeapons[id].level++;
+                        audio.playMerge();
+                        renderWeaponList();
+                        syncTopAndBattleUI();
+                        saveState();
+                    }
+                });
+            });
+        }
+
+        function renderSkillCodex() {
+            const preview = document.getElementById('equippedSlotsPreview');
+            preview.innerHTML = state.equippedSkills.map((skId, idx) => {
+                const def = SKILL_CATALOG.find(s => s.id === skId);
+                return `
+                    <div class="bg-[#15121c] border ${def ? 'border-cyan-400/70' : 'border-dashed border-gray-600'} rounded-lg p-1.5 flex flex-col items-center justify-center text-center">
+                        <span class="text-[9px] text-gray-400">槽位 ${idx + 1}</span>
+                        <span class="text-base my-0.5">${def ? def.icon : '➕'}</span>
+                        <span class="text-[9px] font-bold ${def ? def.color : 'text-gray-500'} truncate w-full">${def ? def.name : '未裝備'}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const list = document.getElementById('skillCodexList');
+            list.innerHTML = SKILL_CATALOG.map(sk => {
+                const lvl = state.unlockedSkills[sk.id] || 0;
+                const isUnlocked = lvl > 0;
+                const isEquipped = state.equippedSkills.includes(sk.id);
+                const upgCost = Math.floor(140 * Math.pow(1.42, Math.max(0, lvl - 1)));
+                const powerPct = Math.round(sk.mult * (1 + Math.max(0, lvl - 1) * 0.35) * 100);
+
+                return `
+                    <div class="bg-[#211c2b] border ${isEquipped ? 'border-cyan-400/80' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col gap-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xl">${sk.icon}</span>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-xs font-bold ${sk.color}">${sk.name}</span>
+                                        ${isUnlocked ? `<span class="text-[10px] font-mono text-amber-300">Lv.${lvl}</span>` : `<span class="text-[9px] px-1 rounded bg-gray-800 text-gray-400">未解鎖</span>`}
+                                    </div>
+                                    <div class="text-[10px] text-gray-400 truncate">${sk.desc}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-1 border-t border-gray-800/80">
+                            <span class="text-[10px] text-gray-400">威力: <b class="text-amber-300">${powerPct}%</b> | 冷卻: ${sk.cd}s</span>
+                            <div class="flex gap-1">
+                                ${isUnlocked ? `
+                                    <button class="equip-sk-btn rpg-btn px-2 py-0.5 rounded text-[10px] font-bold ${isEquipped ? 'text-gray-400' : 'text-cyan-300'}" data-id="${sk.id}">${isEquipped ? '卸下' : '裝備'}</button>
+                                    <button class="upg-sk-btn rpg-btn rpg-btn-gold px-2 py-0.5 rounded text-[10px] font-bold" data-id="${sk.id}" data-cost="${upgCost}" ${state.gold < upgCost ? 'disabled' : ''}>升級 🪙${formatNumber(upgCost)}</button>
+                                ` : `
+                                    <button class="unlock-sk-btn rpg-btn rpg-btn-gold px-2.5 py-0.5 rounded text-[10px] font-bold" data-id="${sk.id}" data-crystal="${sk.unlockCrystal}" ${state.crystals < sk.unlockCrystal ? 'disabled' : ''}>💠 ${sk.unlockCrystal} 解鎖</button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.unlock-sk-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const cost = Number(btn.dataset.crystal);
+                    if (state.crystals >= cost) {
+                        state.crystals -= cost;
+                        state.unlockedSkills[id] = 1;
+                        unlockCodexEntry('skills', id);
+                        const emptySlot = state.equippedSkills.findIndex(s => s === null);
+                        if (emptySlot !== -1) state.equippedSkills[emptySlot] = id;
+                        audio.playLevelUp();
+                        renderEquippedSkillBar();
+                        renderSkillCodex();
+                        syncTopAndBattleUI();
+                        saveState();
+                    }
+                });
+            });
+
+            list.querySelectorAll('.upg-sk-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const cost = Number(btn.dataset.cost);
+                    if (state.gold >= cost) {
+                        state.gold -= cost;
+                        state.unlockedSkills[id]++;
+                        audio.playMerge();
+                        renderSkillCodex();
+                        syncTopAndBattleUI();
+                        saveState();
+                    }
+                });
+            });
+
+            list.querySelectorAll('.equip-sk-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const existingIdx = state.equippedSkills.indexOf(id);
+                    if (existingIdx !== -1) state.equippedSkills[existingIdx] = null;
+                    else {
+                        const emptyIdx = state.equippedSkills.findIndex(s => s === null);
+                        if (emptyIdx !== -1) state.equippedSkills[emptyIdx] = id;
+                        else state.equippedSkills[3] = id;
+                    }
+                    audio.playCoin();
+                    renderEquippedSkillBar();
+                    renderSkillCodex();
+                    saveState();
+                });
+            });
+        }
+
+        function renderDollGrid() {
+            const grid = document.getElementById('dollGrid');
+            document.getElementById('summonDollCost').textContent = `🪙${formatNumber(getSummonDollCost())}`;
+            document.getElementById('dollTabBonus').textContent = `+${formatNumber(Math.round(getDollTotalBonus() * 100))}%`;
+
+            grid.innerHTML = state.dolls.map((tier, idx) => {
+                if (!tier) {
+                    return `<div class="doll-slot flex items-center justify-center text-gray-700 text-[9px]" data-idx="${idx}">·</div>`;
+                }
+                const info = DOLL_TIERS.find(d => d.tier === tier) || DOLL_TIERS[DOLL_TIERS.length - 1];
+                const isSelected = selectedDollIndex === idx;
+                return `
+                    <div class="doll-slot has-doll ${isSelected ? 'selected' : ''} flex flex-col items-center justify-center p-0.5"
+                         draggable="true" data-idx="${idx}">
+                        <span class="text-[8px] font-black px-1 rounded bg-black/70 text-amber-300 absolute top-0.5 left-0.5">T${info.tier}</span>
+                        <span class="text-lg sm:text-xl leading-none mt-1">${info.icon}</span>
+                        <span class="text-[8px] font-bold text-gray-200 truncate w-full text-center mt-0.5">${info.name}</span>
+                    </div>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.doll-slot').forEach(slot => {
+                const idx = Number(slot.dataset.idx);
+                slot.addEventListener('click', () => handleDollSlotClick(idx));
+                slot.addEventListener('dragstart', e => {
+                    if (state.dolls[idx] !== null) {
+                        e.dataTransfer.setData('text/plain', idx.toString());
+                        selectedDollIndex = idx;
+                    }
+                });
+                slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
+                slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    const fromIdx = Number(e.dataTransfer.getData('text/plain'));
+                    if (!isNaN(fromIdx) && fromIdx !== idx) mergeOrSwapDolls(fromIdx, idx);
+                });
+            });
+        }
+
+        function handleDollSlotClick(idx) {
+            if (selectedDollIndex === null) {
+                if (state.dolls[idx] !== null) { selectedDollIndex = idx; renderDollGrid(); }
+            } else if (selectedDollIndex === idx) {
+                selectedDollIndex = null;
+                renderDollGrid();
+            } else {
+                mergeOrSwapDolls(selectedDollIndex, idx);
+            }
+        }
+
+        function mergeOrSwapDolls(fromIdx, toIdx) {
+            const fromTier = state.dolls[fromIdx];
+            const toTier = state.dolls[toIdx];
+            selectedDollIndex = null;
+            let didMerge = false;
+
+            if (fromTier !== null && fromTier === toTier) {
+                if (fromTier >= DOLL_TIERS.length) {
+                    showToast('✨ 已達到最高 T12 神話玩偶！');
+                } else {
+                    const nextTier = fromTier + 1;
+                    state.dolls[toIdx] = nextTier;
+                    state.dolls[fromIdx] = null;
+                    state.totalMerges++;
+                    didMerge = true;
+                    unlockCodexEntry('dolls', String(nextTier));
+                    addQuestProgress('q_merge', 1);
+                    const newDoll = DOLL_TIERS.find(d => d.tier === nextTier);
+                    audio.playMerge();
+                    showToast(`🎉 合成進化為【T${nextTier} ${newDoll.name}】！`);
+                }
+            } else {
+                state.dolls[toIdx] = fromTier;
+                state.dolls[fromIdx] = toTier;
+            }
+
+            renderDollGrid();
+            syncTopAndBattleUI();
+            saveState();
+            if (didMerge && state.autoCloudSync) pushSaveToGoogleSheets(true);
+        }
+
+        function autoMergeAllDolls() {
+            let mergeCount = 0;
+            let keepChecking = true;
+            while (keepChecking) {
+                keepChecking = false;
+                for (let i = 0; i < state.dolls.length; i++) {
+                    const t1 = state.dolls[i];
+                    if (!t1 || t1 >= DOLL_TIERS.length) continue;
+                    for (let j = i + 1; j < state.dolls.length; j++) {
+                        if (state.dolls[j] === t1) {
+                            const nextTier = t1 + 1;
+                            state.dolls[i] = nextTier;
+                            state.dolls[j] = null;
+                            unlockCodexEntry('dolls', String(nextTier));
+                            mergeCount++;
+                            keepChecking = true;
+                            break;
+                        }
+                    }
+                    if (keepChecking) break;
+                }
+            }
+
+            if (mergeCount > 0) {
+                state.totalMerges += mergeCount;
+                addQuestProgress('q_merge', mergeCount);
+                audio.playMerge();
+                showToast(`✨ 自動完成 ${mergeCount} 次玩偶合成！`);
+                renderDollGrid();
+                syncTopAndBattleUI();
+                saveState();
+                if (state.autoCloudSync) pushSaveToGoogleSheets(true);
+            } else {
+                showToast('目前沒有可合成的相同玩偶');
+            }
+        }
+
+        function summonDolls(count = 1) {
+            let summoned = 0;
+            for (let c = 0; c < count; c++) {
+                const emptyIdx = state.dolls.findIndex(d => d === null);
+                if (emptyIdx === -1) break;
+                const cost = getSummonDollCost();
+                if (state.gold < cost) break;
+                state.gold -= cost;
+                state.dollSummonCount++;
+                state.dolls[emptyIdx] = 1;
+                unlockCodexEntry('dolls', '1');
+                summoned++;
+            }
+            if (summoned > 0) {
+                audio.playCoin();
+                renderDollGrid();
+                syncTopAndBattleUI();
+                saveState();
+            } else {
+                showToast('⚠️ 盤面已滿或金幣不足！');
+            }
+        }
+
+        function renderCodexPage() {
+            const cStats = getCodexStats();
+            document.getElementById('codexProgressText').textContent = `${cStats.unlockedCount}/${cStats.total}`;
+            document.getElementById('codexAtkBonus').textContent = `+${Math.round(cStats.atkBonus * 100)}%`;
+            document.getElementById('codexGoldBonus').textContent = `+${Math.round(cStats.goldBonus * 100)}%`;
+
+            const allEntries = getAllCodexEntries();
+            const items = allEntries[activeCodexCat] || [];
+            const grid = document.getElementById('codexGrid');
+
+            grid.innerHTML = items.map(item => {
+                const key = `${activeCodexCat}:${item.id}`;
+                const unlocked = !!state.codex.unlocked[key];
+                const claimed = !!state.codex.claimed[key];
+
+                return `
+                    <div class="bg-[#211c2b] border ${unlocked && !claimed ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col justify-between gap-1.5 ${!unlocked ? 'opacity-45' : ''}">
+                        <div class="flex items-start gap-2">
+                            <div class="w-8 h-8 rounded bg-[#14111c] border border-gray-700 flex items-center justify-center text-lg shrink-0">
+                                ${unlocked ? item.icon : '❓'}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-bold ${unlocked ? 'text-gray-100' : 'text-gray-500'} truncate">
+                                    ${unlocked ? item.name : '未解鎖條目'}
+                                </div>
+                                <div class="text-[9px] text-gray-400 leading-tight mt-0.5">
+                                    ${unlocked ? item.desc : '繼續冒險以點亮此圖鑑'}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${unlocked ? (
+                            claimed
+                                ? `<div class="text-[9px] text-center py-1 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-800/40">✔ 已收錄圖鑑</div>`
+                                : `<button class="claim-codex-btn rpg-btn rpg-btn-gold w-full py-1 rounded text-[10px] font-bold" data-key="${key}" data-reward="${item.rewardCrystal}">
+                                    🎁 領取首通 💠+${item.rewardCrystal}
+                                   </button>`
+                        ) : `<div class="text-[9px] text-center py-1 rounded bg-black/40 text-gray-600">尚未發現</div>`}
+                    </div>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.claim-codex-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.key;
+                    const reward = Number(btn.dataset.reward);
+                    if (!state.codex.claimed[key]) {
+                        state.codex.claimed[key] = true;
+                        state.crystals += reward;
+                        audio.playLevelUp();
+                        showToast(`📖 圖鑑收錄獎勵！獲得技能結晶 💠+${reward}`);
+                        updateCodexRedDot();
+                        renderCodexPage();
+                        syncTopAndBattleUI();
+                        saveState();
+                    }
+                });
+            });
+        }
+
+        function updateQuestTrackerUI() {
+            let chosenDef = QUEST_DEFS[0];
+            let hasClaimable = false;
+
+            for (const q of QUEST_DEFS) {
+                const prog = state.questProgress[q.id];
+                const target = q.baseTarget + prog.tier * q.step;
+                if (prog.count >= target) { chosenDef = q; hasClaimable = true; break; }
+            }
+            if (state.mine.readyToClaim || state.bounty.completed) hasClaimable = true;
+
+            const redDot = document.getElementById('questRedDot');
+            if (redDot) {
+                if (hasClaimable) redDot.classList.remove('hidden');
+                else redDot.classList.add('hidden');
+            }
+
+            const prog = state.questProgress[chosenDef.id];
+            const target = chosenDef.baseTarget + prog.tier * chosenDef.step;
+            const pct = Math.min(100, (prog.count / target) * 100);
+
+            const trackerBtn = document.getElementById('questTrackerBtn');
+            const titleEl = document.getElementById('trackerTitle');
+            const barEl = document.getElementById('trackerBar');
+            const statusEl = document.getElementById('trackerStatus');
+
+            if (prog.count >= target) {
+                trackerBtn.classList.add('border-amber-400', 'bg-amber-950/60');
+                titleEl.textContent = `🎁 點擊領獎：${chosenDef.title}`;
+                statusEl.textContent = '領取!';
+                statusEl.className = 'text-[9px] font-bold text-amber-300 shrink-0 animate-bounce';
+            } else {
+                trackerBtn.classList.remove('border-amber-400', 'bg-amber-950/60');
+                titleEl.textContent = `📋 ${chosenDef.title}`;
+                statusEl.textContent = `${prog.count}/${target}`;
+                statusEl.className = 'text-[9px] font-mono font-bold text-gray-300 shrink-0';
+            }
+            barEl.style.width = `${pct}%`;
+        }
+
+        function claimDailyQuest(questId) {
+            const q = QUEST_DEFS.find(item => item.id === questId);
+            const prog = state.questProgress[questId];
+            const target = q.baseTarget + prog.tier * q.step;
+            if (prog.count < target) return;
+
+            prog.count -= target;
+            prog.tier++;
+
+            if (q.rewardType === 'crystal') {
+                const reward = q.baseReward + (prog.tier - 1) * 3;
+                state.crystals += reward;
+                showToast(`💠 完成輪班委託！獲得技能結晶 +${reward}`);
+            } else {
+                const stats = getStats();
+                const reward = Math.floor(q.baseReward * Math.pow(1.3, state.floor - 1) * stats.goldMult);
+                state.gold += reward;
+                showToast(`🪙 完成輪班委託！獲得金幣 +${formatNumber(reward)}`);
+            }
+
+            audio.playLevelUp();
+            updateQuestTrackerUI();
+            renderSubtabContent('daily');
+            syncTopAndBattleUI();
+            saveState();
+        }
+
+        function renderSubtabContent(subtabName) {
+            if (subtabName === 'daily') {
+                const container = document.getElementById('subtab-daily');
+                container.innerHTML = QUEST_DEFS.map(q => {
+                    const prog = state.questProgress[q.id];
+                    const target = q.baseTarget + prog.tier * q.step;
+                    const isDone = prog.count >= target;
+                    const pct = Math.min(100, (prog.count / target) * 100);
+                    const stats = getStats();
+                    const rewardStr = q.rewardType === 'crystal'
+                        ? `💠 ${q.baseReward + prog.tier * 3}`
+                        : `🪙 ${formatNumber(Math.floor(q.baseReward * Math.pow(1.3, state.floor - 1) * stats.goldMult))}`;
+
+                    return `
+                        <div class="bg-[#211c2b] border ${isDone ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex items-center justify-between gap-2">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between text-xs font-bold mb-1">
+                                    <span class="text-gray-100 truncate">${q.title}</span>
+                                    <span class="text-[10px] font-mono text-cyan-300">${prog.count}/${target}</span>
+                                </div>
+                                <div class="w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                                    <div class="h-full ${isDone ? 'bg-amber-400' : 'bg-cyan-500'}" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                            <button class="claim-quest-btn rpg-btn ${isDone ? 'rpg-btn-gold' : ''} px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0"
+                                    data-qid="${q.id}" ${!isDone ? 'disabled' : ''}>
+                                ${isDone ? `領取 ${rewardStr}` : rewardStr}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+                container.querySelectorAll('.claim-quest-btn').forEach(btn => {
+                    btn.addEventListener('click', () => claimDailyQuest(btn.dataset.qid));
+                });
+
+            } else if (subtabName === 'mine') {
+                const container = document.getElementById('subtab-mine');
+                if (state.mine.activeRoute) {
+                    const route = MINE_ROUTES.find(r => r.id === state.mine.activeRoute) || MINE_ROUTES[0];
+                    const remSec = Math.max(0, Math.ceil((state.mine.endTime - Date.now()) / 1000));
+                    const isReady = state.mine.readyToClaim || remSec <= 0;
+
+                    container.innerHTML = `
+                        <div class="bg-[#211c2b] border border-cyan-500/50 rounded-lg p-3 flex flex-col items-center text-center gap-2">
+                            <div class="text-2xl">⛏️</div>
+                            <div class="text-xs font-bold text-cyan-300">正在開採：${route.name}</div>
+                            <div class="text-xs text-gray-300">
+                                ${isReady ? '<span class="text-emerald-400 font-bold">✅ 礦脈已開採完畢！</span>' : `剩餘時間：<b id="activeMineCountdown" class="text-amber-300 font-mono">${remSec} 秒</b>`}
+                            </div>
+                            <div class="flex gap-2 w-full mt-1">
+                                ${isReady ? `
+                                    <button id="claimMineBtn" class="rpg-btn rpg-btn-gold w-full py-2 rounded-lg text-xs font-bold">
+                                        領取 💠 ${route.crystalReward} 結晶與金幣！
+                                    </button>
+                                ` : `
+                                    <button id="boostMineBtn" class="rpg-btn w-full py-2 rounded-lg text-xs font-bold text-cyan-300 border-cyan-500/60">
+                                        ⚡ 手動揮鎬加速 (-5秒)
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                    `;
+
+                    if (isReady) {
+                        document.getElementById('claimMineBtn').onclick = () => {
+                            const stats = getStats();
+                            const goldBonus = Math.floor(60 * route.goldMult * Math.pow(1.3, state.floor - 1) * stats.goldMult);
+                            state.crystals += route.crystalReward;
+                            state.gold += goldBonus;
+                            state.mine = { activeRoute: null, endTime: 0, readyToClaim: false };
+                            audio.playLevelUp();
+                            showToast(`⛏️ 礦坑收成！獲得 💠${route.crystalReward} 與 🪙${formatNumber(goldBonus)}`);
+                            renderSubtabContent('mine');
+                            updateQuestTrackerUI();
+                            syncTopAndBattleUI();
+                            saveState();
+                        };
+                    } else {
+                        document.getElementById('boostMineBtn').onclick = () => {
+                            state.mine.endTime -= 5000;
+                            audio.playHit(true);
+                            if (Date.now() >= state.mine.endTime) state.mine.readyToClaim = true;
+                            renderSubtabContent('mine');
+                        };
+                    }
+                } else {
+                    container.innerHTML = MINE_ROUTES.map(r => `
+                        <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-2 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-gray-100">${r.name}</div>
+                                <div class="text-[10px] text-cyan-300">產出：💠 ${r.crystalReward} 技能結晶 + 豐厚金幣</div>
+                            </div>
+                            <button class="start-mine-btn rpg-btn rpg-btn-gold px-2.5 py-1.5 rounded-lg text-[10px] font-bold" data-rid="${r.id}">派遣開採</button>
+                        </div>
+                    `).join('');
+
+                    container.querySelectorAll('.start-mine-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const route = MINE_ROUTES.find(r => r.id === btn.dataset.rid);
+                            state.mine = { activeRoute: route.id, endTime: Date.now() + route.duration * 1000, readyToClaim: false };
+                            audio.playCoin();
+                            renderSubtabContent('mine');
+                            saveState();
+                        });
+                    });
+                }
+
+            } else if (subtabName === 'defense') {
+                const container = document.getElementById('subtab-defense');
+                const targetKills = 30 + state.floor * 3;
+                container.innerHTML = `
+                    <div class="bg-[#211c2b] border border-purple-500/50 rounded-lg p-3 flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-purple-300">🛡️ 無盡怪物潮「加班防禦戰」</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">限時 30 秒</span>
+                        </div>
+                        <p class="text-[11px] text-gray-300 leading-relaxed">
+                            開啟後怪物刷新暴增！在 30 秒內擊殺 <b class="text-amber-300">${targetKills} 隻</b> 怪物，即可額外獲得海量金幣、結晶與 <b class="text-pink-300">2 階玩偶寶箱</b>！
+                        </p>
+                        <button id="launchDefenseBtn" class="rpg-btn rpg-btn-red w-full py-2 rounded-lg text-xs font-bold mt-1" ${boss || defenseMode ? 'disabled' : ''}>
+                            ${defenseMode ? '防禦戰進行中...' : '🔥 立即開啟加班防禦戰'}
+                        </button>
+                    </div>
+                `;
+                const btn = document.getElementById('launchDefenseBtn');
+                if (btn) btn.onclick = startDefenseMode;
+
+            } else if (subtabName === 'bounty') {
+                const container = document.getElementById('subtab-bounty');
+                const tpl = BOUNTY_TEMPLATES[state.bounty.templateIdx % BOUNTY_TEMPLATES.length];
+
+                if (state.bounty.completed) {
+                    container.innerHTML = `
+                        <div class="bg-[#211c2b] border border-amber-400 rounded-lg p-3 flex flex-col items-center text-center gap-2">
+                            <div class="text-2xl">🏆</div>
+                            <div class="text-xs font-bold text-amber-300">懸賞通緝已完成！</div>
+                            <div class="text-[11px] text-gray-300">目標【${tpl.name}】已被成功討伐。</div>
+                            <button id="claimBountyBtn" class="rpg-btn rpg-btn-gold w-full py-2 rounded-lg text-xs font-bold">領取懸賞金 💠 +${tpl.crystalReward} 結晶</button>
+                        </div>
+                    `;
+                    document.getElementById('claimBountyBtn').onclick = () => {
+                        state.crystals += tpl.crystalReward;
+                        state.bounty = { active: false, templateIdx: state.bounty.templateIdx + 1, completed: false };
+                        audio.playLevelUp();
+                        showToast(`🎯 領取懸賞報酬！獲得 💠${tpl.crystalReward} 技能結晶`);
+                        renderSubtabContent('bounty');
+                        updateQuestTrackerUI();
+                        syncTopAndBattleUI();
+                        saveState();
+                    };
+                } else if (state.bounty.active) {
+                    container.innerHTML = `
+                        <div class="bg-[#211c2b] border border-red-500/60 rounded-lg p-3 flex flex-col items-center text-center gap-1.5">
+                            <div class="text-2xl animate-bounce">👹</div>
+                            <div class="text-xs font-bold text-red-400">通緝目標已出現在地下城中！</div>
+                            <div class="text-[11px] text-gray-300">請前往上方戰鬥畫面擊殺 <b class="text-amber-300">${tpl.prefix}${tpl.name}</b>！</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-3 flex flex-col gap-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-amber-300">${tpl.prefix}${tpl.name}</span>
+                                <span class="text-[10px] text-cyan-300">懸賞：💠 ${tpl.crystalReward} + ${tpl.goldMult}倍金幣</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400">接受懸賞合約後，該菁英首領將立即潛入當前地下城樓層，擊殺後可領取高額結晶賞金。</p>
+                            <button id="acceptBountyBtn" class="rpg-btn rpg-btn-gold w-full py-2 rounded-lg text-xs font-bold" ${boss ? 'disabled' : ''}>📜 接取懸賞並引出目標</button>
+                        </div>
+                    `;
+                    document.getElementById('acceptBountyBtn').onclick = () => {
+                        if (boss) return;
+                        state.bounty.active = true;
+                        spawnMonster(1, true);
+                        audio.playExplosion();
+                        showToast(`🎯 通緝目標【${tpl.name}】已在地下城現身！`);
+                        renderSubtabContent('bounty');
+                        saveState();
+                    };
+                }
+            }
+        }
+
+        function renderHeroRoster() {
+            const container = document.getElementById('heroRosterList');
+            container.innerHTML = HERO_DATA.map(h => {
+                const unlocked = state.maxFloor >= h.unlockFloor;
+                const isActive = state.activeHero === h.id;
+                return `
+                    <div class="bg-[#211c2b] border-2 ${isActive ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col items-center text-center gap-1 ${!unlocked ? 'opacity-60' : ''}">
+                        <div class="text-2xl">${h.icon}</div>
+                        <div class="text-[11px] font-bold text-white truncate w-full">${h.name}</div>
+                        <div class="text-[9px] text-cyan-300">${h.bonusText}</div>
+                        ${unlocked
+                            ? `<button class="select-hero-btn rpg-btn ${isActive ? 'rpg-btn-gold' : ''} w-full py-1 rounded text-[10px] font-bold mt-1" data-id="${h.id}">
+                                ${isActive ? '出戰中' : '切換打卡'}
+                               </button>`
+                            : `<div class="w-full py-1 rounded bg-black/50 text-[9px] text-gray-400 mt-1">B${h.unlockFloor}F 解鎖</div>`
+                        }
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.select-hero-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.activeHero = btn.dataset.id;
+                    audio.playCoin();
+                    renderHeroRoster();
+                    renderUpgradeList();
+                    syncTopAndBattleUI();
+                    saveState();
+                });
+            });
+        }
+
+        function syncTopAndBattleUI() {
+            const stats = getStats();
+            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+
+            document.getElementById('headerHeroIcon').textContent = heroObj.icon;
+            document.getElementById('playerNameDisplay').textContent = state.playerName || 'Terence';
+            document.getElementById('playerIdDisplay').textContent = state.playerId || 'PLY-2C9D2E';
+            document.getElementById('goldDisplay').textContent = formatNumber(state.gold);
+            document.getElementById('crystalDisplay').textContent = formatNumber(state.crystals);
+
+            const estDps = (stats.atk / stats.atkInterval) * (1 + stats.critRate * (stats.critDmg - 1));
+            document.getElementById('dpsDisplay').textContent = formatNumber(estDps);
+
+            document.getElementById('floorDisplay').textContent = `B${state.floor}F`;
+            document.getElementById('waveProgressBar').style.width = `${Math.min(100, (state.killsInFloor / 10) * 100)}%`;
+            document.getElementById('waveText').textContent = `${state.killsInFloor}/10`;
+
+            if (boss) {
+                document.getElementById('specialBannerBar').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
+                document.getElementById('specialBannerTimer').textContent = `${Math.max(0, boss.timer).toFixed(1)}s`;
+            }
+
+            state.equippedSkills.forEach((skId, idx) => {
+                if (!skId) return;
+                const btn = document.getElementById(`eqBtn_${idx}`);
+                const cdEl = document.getElementById(`eqCd_${idx}`);
+                const def = SKILL_CATALOG.find(s => s.id === skId);
+                const rem = skillTimers[skId] || 0;
+                if (btn && cdEl && def) {
+                    if (rem > 0) {
+                        cdEl.classList.remove('hidden');
+                        cdEl.textContent = `${rem.toFixed(1)}s`;
+                        btn.classList.remove('skill-ready');
+                    } else {
+                        cdEl.classList.add('hidden');
+                        if (state.mp >= def.mpCost) btn.classList.add('skill-ready');
+                        else btn.classList.remove('skill-ready');
+                    }
+                }
+            });
+
+            document.getElementById('heroLevelDisplay').textContent = state.heroLevel;
+            const hpPct = Math.min(100, (state.hp / state.maxHp) * 100);
+            document.getElementById('hpBar').style.width = `${hpPct}%`;
+            document.getElementById('hpText').textContent = `HP ${Math.round(hpPct)}%`;
+
+            const mpPct = (state.mp / state.maxMp) * 100;
+            document.getElementById('mpBar').style.width = `${mpPct}%`;
+            document.getElementById('mpText').textContent = `MP ${Math.floor(state.mp)}/${state.maxMp}`;
+
+            const reqExp = getRequiredExp(state.heroLevel);
+            const expPct = Math.min(100, (state.exp / reqExp) * 100);
+            document.getElementById('expBar').style.width = `${expPct}%`;
+            document.getElementById('expPercentText').textContent = `${expPct.toFixed(1)}%`;
+
+            const mineTimerEl = document.getElementById('activeMineCountdown');
+            if (mineTimerEl && state.mine.activeRoute && !state.mine.readyToClaim) {
+                mineTimerEl.textContent = `${Math.max(0, Math.ceil((state.mine.endTime - Date.now()) / 1000))} 秒`;
+            }
+
+            document.querySelectorAll('.upg-buy-btn').forEach(btn => { btn.disabled = state.gold < Number(btn.dataset.cost); });
+            const summonBtn = document.getElementById('summonDollBtn');
+            if (summonBtn) summonBtn.disabled = state.gold < getSummonDollCost();
+            const forgeGoldBtn = document.getElementById('forgeGoldBtn');
+            if (forgeGoldBtn) forgeGoldBtn.disabled = state.gold < getForgeGoldCost();
+        }
+
+        function switchToTab(targetTab) {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                if (b.dataset.tab === targetTab) {
+                    b.classList.add('border-amber-400', 'text-amber-300');
+                    b.classList.remove('text-gray-300');
+                } else {
+                    b.classList.remove('border-amber-400', 'text-amber-300');
+                    b.classList.add('text-gray-300');
+                }
+            });
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
+
+            if (targetTab === 'upgrade') renderUpgradeList();
+            if (targetTab === 'weapons') renderWeaponList();
+            if (targetTab === 'skills') renderSkillCodex();
+            if (targetTab === 'dolls') renderDollGrid();
+            if (targetTab === 'codex') renderCodexPage();
+            if (targetTab === 'quests') {
+                const activeSub = document.querySelector('.subtab-btn.subtab-active')?.dataset.subtab || 'daily';
+                renderSubtabContent(activeSub);
+            }
+            if (targetTab === 'heroes') renderHeroRoster();
+        }
+
+        function openProfileModal() {
+            const cStats = getCodexStats();
+            document.getElementById('inputPlayerId').value = state.playerId;
+            document.getElementById('inputPlayerName').value = state.playerName;
+            document.getElementById('inputGasUrl').value = state.gasWebAppUrl || DEFAULT_GAS_EXEC_URL;
+            document.getElementById('autoCloudSyncToggle').checked = !!state.autoCloudSync;
+            document.getElementById('lastCloudSyncText').textContent = `上次雲端同步：${state.lastCloudSyncTime || '尚未同步'}`;
+
+            const sec = Math.floor(state.shiftSeconds);
+            const hh = String(Math.floor(sec / 3600)).padStart(2, '0');
+            const mm = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+            const ss = String(sec % 60).padStart(2, '0');
+            document.getElementById('modalShiftTime').textContent = `${hh}:${mm}:${ss}`;
+
+            document.getElementById('statMaxFloor').textContent = `B${state.maxFloor}F`;
+            document.getElementById('statKills').textContent = formatNumber(state.totalKills);
+            document.getElementById('statCodex').textContent = `${Math.round((cStats.unlockedCount / cStats.total) * 100)}%`;
+            document.getElementById('statMerges').textContent = formatNumber(state.totalMerges);
+            document.getElementById('statForges').textContent = formatNumber(state.weaponForgeCount);
+            document.getElementById('statSkills').textContent = formatNumber(state.totalSkills);
+
+            document.getElementById('profileCloudModal').classList.remove('hidden');
+        }
+
+        function refreshAllUI() {
+            renderEquippedSkillBar();
+            renderUpgradeList();
+            renderWeaponList();
+            renderSkillCodex();
+            renderDollGrid();
+            renderCodexPage();
+            renderSubtabContent('daily');
+            renderHeroRoster();
+            updateQuestTrackerUI();
+            updateCodexRedDot();
+            syncTopAndBattleUI();
+        }
+
+        function checkOfflineEarnings() {
+            const now = Date.now();
+            const elapsedSec = Math.floor((now - state.lastSaveTime) / 1000);
+            if (elapsedSec >= 60) {
+                const cappedSec = Math.min(elapsedSec, 8 * 3600);
+                const stats = getStats();
+                const floorRewardScale = Math.pow(1.32, state.floor - 1);
+                const offlineGold = Math.floor((cappedSec / 2.5) * 12 * floorRewardScale * stats.goldMult);
+                const offlineExp = Math.floor((cappedSec / 2.5) * 16 * floorRewardScale);
+
+                const mins = Math.floor(cappedSec / 60);
+                document.getElementById('offlineTimeText').textContent = mins >= 60 ? `${Math.floor(mins / 60)} 小時 ${mins % 60} 分鐘` : `${mins} 分鐘`;
+                document.getElementById('offlineGoldText').textContent = `+${formatNumber(offlineGold)}`;
+                document.getElementById('offlineExpText').textContent = `+${formatNumber(offlineExp)}`;
+
+                const modal = document.getElementById('offlineModal');
+                modal.classList.remove('hidden');
+                document.getElementById('claimOfflineBtn').onclick = () => {
+                    state.gold += offlineGold;
+                    gainExp(offlineExp);
+                    audio.playLevelUp();
+                    modal.classList.add('hidden');
+                    syncTopAndBattleUI();
+                    renderUpgradeList();
+                    saveState();
+                };
+            }
+        }
+
+        function bindEvents() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
+            });
+
+            document.querySelectorAll('.subtab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.subtab-btn').forEach(b => {
+                        b.classList.remove('subtab-active');
+                        b.classList.add('text-gray-300');
+                    });
+                    btn.classList.add('subtab-active');
+                    btn.classList.remove('text-gray-300');
+                    const sub = btn.dataset.subtab;
+                    document.querySelectorAll('.subtab-content').forEach(c => c.classList.add('hidden'));
+                    document.getElementById(`subtab-${sub}`).classList.remove('hidden');
+                    renderSubtabContent(sub);
+                });
+            });
+
+            document.querySelectorAll('.codex-cat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.codex-cat-btn').forEach(b => {
+                        b.classList.remove('subtab-active');
+                        b.classList.add('text-gray-300');
+                    });
+                    btn.classList.add('subtab-active');
+                    btn.classList.remove('text-gray-300');
+                    activeCodexCat = btn.dataset.cat;
+                    renderCodexPage();
+                });
+            });
+
+            document.getElementById('questTrackerBtn').addEventListener('click', () => {
+                for (const q of QUEST_DEFS) {
+                    const prog = state.questProgress[q.id];
+                    const target = q.baseTarget + prog.tier * q.step;
+                    if (prog.count >= target) { claimDailyQuest(q.id); return; }
+                }
+                switchToTab('quests');
+            });
+
+            document.querySelectorAll('.mult-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buyMultiplier = Number(btn.dataset.mult);
+                    document.querySelectorAll('.mult-btn').forEach(b => {
+                        b.className = 'mult-btn px-2 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-300';
+                    });
+                    btn.className = 'mult-btn px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold';
+                    renderUpgradeList();
+                });
+            });
+
+            document.getElementById('forgeGoldBtn').addEventListener('click', () => forgeWeapon(false));
+            document.getElementById('forgeCrystalBtn').addEventListener('click', () => forgeWeapon(true));
+
+            document.getElementById('summonDollBtn').addEventListener('click', () => summonDolls(1));
+            document.getElementById('summonFiveBtn').addEventListener('click', () => summonDolls(5));
+            document.getElementById('autoMergeBtn').addEventListener('click', autoMergeAllDolls);
+
+            document.getElementById('autoSkillBtn').addEventListener('click', () => {
+                state.autoSkill = !state.autoSkill;
+                const dot = document.getElementById('autoStatusDot');
+                dot.textContent = state.autoSkill ? 'ON' : 'OFF';
+                dot.className = state.autoSkill ? 'text-[9px] text-emerald-400' : 'text-[9px] text-gray-500';
+                showToast(state.autoSkill ? '已開啟自動循環施放技能' : '已切換為手動施放技能');
+            });
+
+            document.getElementById('bossBtn').addEventListener('click', startBossBattle);
+            document.getElementById('muteBtn').addEventListener('click', () => {
+                audio.muted = !audio.muted;
+                document.getElementById('muteBtn').textContent = audio.muted ? '🔇' : '🔊';
+            });
+
+            document.getElementById('openProfileBtn').addEventListener('click', openProfileModal);
+            document.getElementById('quickSyncBtn').addEventListener('click', () => pushSaveToGoogleSheets(false));
+            document.getElementById('closeProfileModalBtn').addEventListener('click', () => {
+                document.getElementById('profileCloudModal').classList.add('hidden');
+            });
+
+            document.getElementById('genNewIdBtn').addEventListener('click', () => {
+                document.getElementById('inputPlayerId').value = generatePlayerId();
+            });
+
+            document.getElementById('saveProfileIdentityBtn').addEventListener('click', () => {
+                const newId = document.getElementById('inputPlayerId').value.trim();
+                const newName = document.getElementById('inputPlayerName').value.trim();
+                const newUrl = document.getElementById('inputGasUrl').value.trim();
+                if (newId) state.playerId = newId;
+                if (newName) state.playerName = newName;
+                state.gasWebAppUrl = newUrl || DEFAULT_GAS_EXEC_URL;
+                state.autoCloudSync = document.getElementById('autoCloudSyncToggle').checked;
+                saveState();
+                syncTopAndBattleUI();
+                showToast(`✅ 已更新玩家識別：${state.playerName} (${state.playerId})`);
+                if (state.autoCloudSync) pushSaveToGoogleSheets(true);
+            });
+
+            document.getElementById('autoCloudSyncToggle').addEventListener('change', e => {
+                state.autoCloudSync = e.target.checked;
+                saveState();
+                showToast(state.autoCloudSync ? '⏱️ 已啟用 Google 試算表自動同步' : '⏸️ 已暫停自動同步');
+            });
+
+            document.getElementById('pushToSheetsBtn').addEventListener('click', () => {
+                state.playerId = document.getElementById('inputPlayerId').value.trim() || state.playerId;
+                state.playerName = document.getElementById('inputPlayerName').value.trim() || state.playerName;
+                state.gasWebAppUrl = document.getElementById('inputGasUrl').value.trim() || DEFAULT_GAS_EXEC_URL;
+                pushSaveToGoogleSheets(false);
+            });
+
+            document.getElementById('pullFromSheetsBtn').addEventListener('click', () => {
+                state.gasWebAppUrl = document.getElementById('inputGasUrl').value.trim() || DEFAULT_GAS_EXEC_URL;
+                pullSaveFromGoogleSheets();
+            });
+
+            document.getElementById('toggleGasGuideBtn').addEventListener('click', () => {
+                document.getElementById('gasGuideBox').classList.toggle('hidden');
+            });
+
+            document.getElementById('copyGasCodeBtn').addEventListener('click', () => {
+                const area = document.getElementById('gasCodeArea');
+                area.select();
+                document.execCommand('copy');
+                showToast('📋 已複製 Apps Script 程式碼！');
+            });
+
+            document.getElementById('copyTsvRowBtn').addEventListener('click', () => {
+                const p = buildCloudPayload();
+                const tsv = [
+                    p.playerId, p.playerName, p.syncedAt, p.currentFloor, p.maxFloor,
+                    p.heroLevel, p.gold, p.crystals, p.activeHero, p.equippedWeapon,
+                    p.killsInFloor, p.codexProgress, p.totalKills, p.totalMerges, p.saveJson
+                ].join('\t');
+                const temp = document.createElement('textarea');
+                temp.value = tsv;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast('📄 已複製 15 欄 TSV 單列，可直接貼入試算表！');
+            });
+
+            document.getElementById('exportSaveCodeBtn').addEventListener('click', () => {
+                const temp = document.createElement('textarea');
+                temp.value = JSON.stringify(state);
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast('📋 完整 JSON 存檔代碼已複製到剪貼簿！');
+            });
+
+            document.getElementById('importSaveCodeBtn').addEventListener('click', () => {
+                document.getElementById('importCodeInput').value = '';
+                document.getElementById('importCodeModal').classList.remove('hidden');
+            });
+
+            document.getElementById('cancelImportBtn').addEventListener('click', () => {
+                document.getElementById('importCodeModal').classList.add('hidden');
+            });
+
+            document.getElementById('confirmImportBtn').addEventListener('click', () => {
+                try {
+                    const raw = document.getElementById('importCodeInput').value.trim();
+                    const parsed = JSON.parse(raw);
+                    if (!parsed || typeof parsed !== 'object') throw new Error('Invalid');
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+                    state = loadState();
+                    saveState();
+                    refreshAllUI();
+                    document.getElementById('importCodeModal').classList.add('hidden');
+                    showToast(`✅ 成功匯入玩家 [${state.playerName}] 的存檔！`);
+                } catch (e) {
+                    showToast('❌ 存檔代碼格式錯誤，請重新確認');
+                }
+            });
+
+            document.getElementById('resetSaveBtn').addEventListener('click', () => {
+                localStorage.removeItem(STORAGE_KEY);
+                state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+                skillTimers = {};
+                monsters = [];
+                boss = null;
+                defenseMode = null;
+                document.getElementById('specialBannerContainer').classList.add('hidden');
+                document.getElementById('bossBtn').disabled = false;
+                for (let i = 0; i < 8; i++) spawnMonster();
+                refreshAllUI();
+                openProfileModal();
+                showToast('🔄 本機存檔已重置，重新開始輪班！');
+            });
+        }
+
+        function gameLoop(now) {
+            const dt = Math.min(0.1, (now - lastTime) / 1000);
+            lastTime = now;
+            update(dt);
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function () {
+            resizeCanvas();
+            hero.x = cw * 0.3;
+            hero.y = platforms[1].y;
+
+            for (let i = 0; i < 8; i++) spawnMonster();
+
+            bindEvents();
+            refreshAllUI();
+            checkOfflineEarnings();
+
+            // 啟動後先進行一次靜默自動同步
+            if (state.autoCloudSync) {
+                setTimeout(() => pushSaveToGoogleSheets(true), 1200);
+            }
+
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
