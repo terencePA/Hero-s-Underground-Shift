@@ -491,18 +491,20 @@
                         <div>
                             <label class="text-[11px] text-cyan-300 font-bold block mb-1">玩家 ID（帳號識別碼）</label>
                             <div class="flex gap-1.5">
-                                <input id="loginPlayerIdInput" type="text" class="flex-1 bg-[#1f1a29] border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400" placeholder="例如：PLY-8K4M2P">
+                                <input id="loginPlayerIdInput" type="text" class="flex-1 bg-[#1f1a29] border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400" placeholder="例如：PLY-2C9D2E">
                                 <button id="loginGenIdBtn" type="button" class="rpg-btn px-2.5 rounded-lg text-xs font-bold text-amber-300" title="產生全新唯一 ID">🎲 新ID</button>
+                                <button id="loginFetchCloudBtn" type="button" class="rpg-btn rpg-btn-cyan px-2.5 rounded-lg text-xs font-bold" title="查詢雲端試算表紀錄">☁️ 查雲端</button>
                             </div>
+                            <div id="loginCloudLookupStatus" class="text-[10px] text-gray-400 mt-1 min-h-[14px]">輸入帳號後可直接登入，系統會自動查詢雲端存檔</div>
                         </div>
 
                         <div>
                             <label class="text-[11px] text-amber-300 font-bold block mb-1">遊戲者名稱（輪班英雄暱稱）</label>
-                            <input id="loginPlayerNameInput" type="text" maxlength="16" class="w-full bg-[#1f1a29] border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-amber-400" placeholder="請輸入您的角色名稱">
+                            <input id="loginPlayerNameInput" type="text" maxlength="16" class="w-full bg-[#1f1a29] border border-gray-600 rounded-lg px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-amber-400" placeholder="請輸入您的角色名稱（若雲端已有紀錄可自動帶入）">
                         </div>
 
                         <button id="confirmLoginBtn" type="button" class="rpg-btn rpg-btn-gold w-full py-2.5 rounded-lg font-black text-sm mt-1">
-                            🚀 打卡上班並進入地下城
+                            🚀 打卡上班並載入帳號
                         </button>
                     </div>
 
@@ -1207,14 +1209,90 @@
             const cleanId = sanitizePlayerId(playerId);
             if (!GAS_EXEC_URL || !cleanId) return null;
             try {
-                const res = await fetch(`${GAS_EXEC_URL}?playerId=${encodeURIComponent(cleanId)}`);
+                const res = await fetch(`${GAS_EXEC_URL}?playerId=${encodeURIComponent(cleanId)}&_t=${Date.now()}`);
                 if (!res.ok) return null;
                 const data = await res.json();
-                if (data && data.ok && data.found && data.saveJson) {
-                    const parsed = typeof data.saveJson === 'string' ? JSON.parse(data.saveJson) : data.saveJson;
-                    return normalizeLoadedState(parsed, cleanId, (data.data && data.data.playerName) || '');
+                if (!data || !data.ok || !data.found) return null;
+
+                const rowMeta = data.data || {};
+                const sheetName = rowMeta.playerName || data.playerName || '';
+
+                if (rowMeta.saveJson) {
+                    const rawJson = typeof rowMeta.saveJson === 'string' ? JSON.parse(rowMeta.saveJson) : rowMeta.saveJson;
+                    const normalized = normalizeLoadedState(rawJson, cleanId, sheetName);
+                    normalized.playerId = cleanId;
+                    if (sheetName) normalized.playerName = String(sheetName).trim();
+                    normalized.lastCloudSyncTime = rowMeta.syncedAt || normalized.lastCloudSyncTime || '';
+                    return normalized;
                 }
-            } catch (e) {}
+
+                // 若無完整 saveJson，仍可依試算表欄位還原基本進度
+                const fallbackState = createDefaultAccountState(cleanId, sheetName);
+                const floorNum = parseInt(String(rowMeta.currentFloor || '1').replace(/\D+/g, ''), 10) || 1;
+                const maxFloorNum = parseInt(String(rowMeta.maxFloor || floorNum).replace(/\D+/g, ''), 10) || floorNum;
+                fallbackState.floor = floorNum;
+                fallbackState.maxFloor = Math.max(floorNum, maxFloorNum);
+                fallbackState.heroLevel = Number(rowMeta.heroLevel) || 1;
+                fallbackState.gold = Number(rowMeta.gold) || 0;
+                fallbackState.crystals = Number(rowMeta.crystals) || 0;
+                fallbackState.activeHero = rowMeta.activeHero || fallbackState.activeHero;
+                fallbackState.equippedWeapon = rowMeta.equippedWeapon || fallbackState.equippedWeapon;
+                fallbackState.killsInFloor = Number(rowMeta.killsInFloor) || 0;
+                fallbackState.totalKills = Number(rowMeta.totalKills) || 0;
+                fallbackState.totalMerges = Number(rowMeta.totalMerges) || 0;
+                fallbackState.lastCloudSyncTime = rowMeta.syncedAt || '';
+                return fallbackState;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function previewCloudAccountInLogin(rawId, showNotice = true) {
+            const statusEl = document.getElementById('loginCloudLookupStatus');
+            const nameInput = document.getElementById('loginPlayerNameInput');
+            const cleanId = sanitizePlayerId(rawId);
+            if (!cleanId) return null;
+
+            if (statusEl) {
+                statusEl.className = 'text-[10px] text-cyan-300 mt-1 min-h-[14px]';
+                statusEl.textContent = `🔍 正在查詢雲端帳號 ${cleanId}...`;
+            }
+
+            const cloudAcc = await tryFetchCloudSave(cleanId);
+            if (cloudAcc) {
+                if (nameInput && !String(nameInput.value || '').trim()) {
+                    nameInput.value = cloudAcc.playerName;
+                }
+                if (statusEl) {
+                    statusEl.className = 'text-[10px] text-emerald-300 mt-1 min-h-[14px]';
+                    statusEl.textContent = `✅ 找到雲端紀錄：${cloudAcc.playerName}（最高 B${cloudAcc.maxFloor}F · Lv.${cloudAcc.heroLevel} · 🪙${formatNumber(cloudAcc.gold)}）`;
+                }
+                if (showNotice) {
+                    showToast(`☁️ 已找到帳號 ${cleanId} 的雲端存檔`);
+                }
+                return cloudAcc;
+            }
+
+            const localRaw = localStorage.getItem(STORAGE_PREFIX + cleanId);
+            if (localRaw) {
+                const localAcc = loadAccountState(cleanId, '');
+                if (nameInput && !String(nameInput.value || '').trim()) {
+                    nameInput.value = localAcc.playerName;
+                }
+                if (statusEl) {
+                    statusEl.className = 'text-[10px] text-amber-300 mt-1 min-h-[14px]';
+                    statusEl.textContent = `💾 找到本機存檔：${localAcc.playerName}（最高 B${localAcc.maxFloor}F · Lv.${localAcc.heroLevel}）`;
+                }
+                return localAcc;
+            }
+
+            if (statusEl) {
+                statusEl.className = 'text-[10px] text-gray-400 mt-1 min-h-[14px]';
+                statusEl.textContent = `🆕 尚未查到既有紀錄，登入後將以此帳號建立新存檔並同步雲端`;
+            }
+            if (showNotice) {
+                showToast(`🆕 帳號 ${cleanId} 為新帳號，登入後將建立紀錄`);
+            }
             return null;
         }
 
@@ -2198,8 +2276,14 @@
             const modal = document.getElementById('loginModal');
             const idInput = document.getElementById('loginPlayerIdInput');
             const nameInput = document.getElementById('loginPlayerNameInput');
-            if (idInput) idInput.value = generatePlayerId();
+            const statusEl = document.getElementById('loginCloudLookupStatus');
+            const known = getKnownAccounts();
+            if (idInput) idInput.value = known.length > 0 ? known[0].playerId : generatePlayerId();
             if (nameInput) nameInput.value = '';
+            if (statusEl) {
+                statusEl.className = 'text-[10px] text-gray-400 mt-1 min-h-[14px]';
+                statusEl.textContent = '輸入帳號後可直接登入，系統會自動查詢雲端存檔';
+            }
             renderKnownAccountsList();
             if (modal) modal.classList.remove('hidden');
         }
@@ -2235,16 +2319,21 @@
 
         async function completeLogin(rawId, rawName) {
             const cleanId = sanitizePlayerId(rawId);
-            const cleanName = String(rawName || '').trim() || `冒險者_${cleanId.slice(-4)}`;
-
-            let loaded = loadAccountState(cleanId, cleanName);
+            const hasLocal = Boolean(localStorage.getItem(STORAGE_PREFIX + cleanId));
+            let loaded = loadAccountState(cleanId, rawName);
             const cloudLoaded = await tryFetchCloudSave(cleanId);
-            if (cloudLoaded && (!localStorage.getItem(STORAGE_PREFIX + cleanId) || (cloudLoaded.lastSaveTime || 0) > (loaded.lastSaveTime || 0))) {
-                loaded = cloudLoaded;
+
+            if (cloudLoaded) {
+                const localTime = hasLocal ? (loaded.lastSaveTime || 0) : 0;
+                const cloudTime = cloudLoaded.lastSaveTime ? Date.parse(cloudLoaded.lastSaveTime) || (cloudLoaded.lastSaveTime || 0) : (cloudLoaded.lastSaveTime || 0);
+                if (!hasLocal || cloudTime >= localTime) {
+                    loaded = cloudLoaded;
+                }
             }
 
+            const finalName = String(rawName || '').trim() || loaded.playerName || `冒險者_${cleanId.slice(-4)}`;
             loaded.playerId = cleanId;
-            loaded.playerName = cleanName;
+            loaded.playerName = finalName;
             state = loaded;
             isLoggedIn = true;
             skillTimers = {};
@@ -2307,41 +2396,21 @@
 
             safeOn('loginGenIdBtn', 'click', () => {
                 const idInput = document.getElementById('loginPlayerIdInput');
+                const nameInput = document.getElementById('loginPlayerNameInput');
                 if (idInput) idInput.value = generatePlayerId();
+                if (nameInput) nameInput.value = '';
+                previewCloudAccountInLogin((idInput && idInput.value) || '', false);
             });
 
-            safeOn('openLoginTopBtn', 'click', () => openLoginModal());
-            safeOn('switchAccountFromProfileBtn', 'click', () => {
-                const pModal = document.getElementById('profileCloudModal');
-                if (pModal) pModal.classList.add('hidden');
-                openLoginModal();
+            safeOn('loginFetchCloudBtn', 'click', () => {
+                const idVal = (document.getElementById('loginPlayerIdInput') || {}).value || '';
+                previewCloudAccountInLogin(idVal, true);
             });
 
-            safeOn('openProfileBtn', 'click', () => openProfileModal());
-            safeOn('closeProfileModalBtn', 'click', () => {
-                const modal = document.getElementById('profileCloudModal');
-                if (modal) modal.classList.add('hidden');
-            });
-
-            safeOn('genNewIdBtn', 'click', () => {
-                const inp = document.getElementById('inputPlayerId');
-                if (inp) inp.value = generatePlayerId();
-            });
-
-            safeOn('saveProfileIdentityBtn', 'click', () => {
-                const idInp = document.getElementById('inputPlayerId');
-                const nameInp = document.getElementById('inputPlayerName');
-                const newId = sanitizePlayerId(idInp ? idInp.value : state.playerId);
-                const newName = String((nameInp ? nameInp.value : state.playerName) || '').trim() || state.playerName;
-
-                if (newId !== state.playerId) {
-                    completeLogin(newId, newName);
-                } else {
-                    state.playerName = newName;
-                    saveState();
-                    syncTopAndBattleUI();
-                    pushSaveToGoogleSheets(true);
-                    showToast(`✅ 已更新玩家識別：${state.playerName} (${state.playerId})`);
+            safeOn('loginPlayerIdInput', 'change', () => {
+                const idVal = (document.getElementById('loginPlayerIdInput') || {}).value || '';
+                if (String(idVal || '').trim()) {
+                    previewCloudAccountInLogin(idVal, false);
                 }
             });
 
