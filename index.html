@@ -139,17 +139,13 @@
     </style>
 </head>
 <body>
-    <!-- 主遊戲容器 -->
-    <div id="app" class="relative w-full max-w-[500px] h-full max-h-[960px] flex flex-col bg-[#120f17] sm:border-x-2 sm:border-[#342d40] shadow-2xl overflow-hidden">
-
-        <!-- 頂部狀態列：玩家 ID / 名稱、金幣、結晶、背景自動同步狀態 -->
-        <header class="flex-none px-2 py-1.5 bg-[#1a1622] border-b-2 border-[#383047] flex items-center justify-between gap-1 z-20">
-            <button id="openProfileBtn" class="flex items-center gap-1.5 min-w-0 bg-[#231d2e] hover:bg-[#2d253b] border border-purple-500/40 rounded-lg px-2 py-1 text-left transition shrink">
-                <div class="w-7 h-7 rounded-md bg-[#14111c] border border-amber-400/70 flex items-center justify-center text-sm shrink-0" id="headerHeroIcon">
-                    ⚡
-                </div>
+    <div id="appShell" class="relative w-full max-w-[520px] h-[100dvh] bg-[#16131d] border-x border-[#3b324b] flex flex-col overflow-hidden shadow-2xl">
+        <!-- 頂部員工資訊與資源列 -->
+        <header class="flex-none bg-[#1c1726] border-b-2 border-[#463c57] px-2.5 py-1.5 flex items-center justify-between gap-2 z-20">
+            <button id="openProfileBtn" type="button" class="flex items-center gap-2 min-w-0 text-left hover:opacity-90 transition cursor-pointer">
                 <div class="min-w-0">
                     <div class="flex items-center gap-1">
+                        <span id="headerHeroIcon" class="text-sm leading-none">⚡</span>
                         <span id="playerNameDisplay" class="font-bold text-xs text-amber-300 truncate max-w-[82px]">Terence</span>
                         <span class="text-[9px] text-gray-400">✏️</span>
                     </div>
@@ -170,7 +166,10 @@
                     <span>☁️</span>
                     <span id="syncStatusIcon" class="text-[9px]">自動</span>
                 </div>
-                <button id="muteBtn" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
+                <button id="openLoginTopBtn" type="button" class="rpg-btn px-1.5 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-cyan-300" title="切換帳號／登入">
+                    🔑
+                </button>
+                <button id="muteBtn" type="button" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
                     🔊
                 </button>
             </div>
@@ -190,22 +189,19 @@
                     <span id="waveText" class="text-[10px] text-gray-300 font-mono">0/10</span>
                 </div>
 
-                <button id="questTrackerBtn" class="pointer-events-auto flex-1 min-w-0 bg-black/80 hover:bg-black/95 border border-cyan-500/50 rounded-lg px-2 py-1 flex items-center justify-between gap-1 text-left transition">
+                <button id="questTrackerBtn" type="button" class="pointer-events-auto flex-1 min-w-0 bg-black/80 hover:bg-black/95 border border-cyan-500/50 rounded-lg px-2 py-1 flex items-center justify-between gap-1 text-left transition">
                     <div class="min-w-0 flex-1">
                         <div class="text-[9px] text-cyan-300 font-bold truncate" id="trackerTitle">📋 委託：清理地下城夜班怪物</div>
                         <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mt-0.5">
                             <div id="trackerBar" class="h-full bg-cyan-400 transition-all duration-200" style="width: 0%"></div>
-                    <div class="bg-[#120f18] border border-emerald-500/40 rounded-lg px-1.5 py-1 flex items-center gap-0.5 text-[10px] font-bold text-emerald-300" title="背景自動同步中">
-                        <span>☁️</span>
-                        <span id="syncStatusIcon" class="text-[9px]">自動</span>
+                        </div>
                     </div>
-                    <button id="openLoginTopBtn" class="rpg-btn px-1.5 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-cyan-300" title="切換帳號／登入">
-                        🔑
-                    </button>
-                    <button id="muteBtn" class="rpg-btn w-6 h-6 rounded-lg flex items-center justify-center text-[11px]" title="切換音效">
-                        🔊
-                    </button>
-                </div>
+                    <span id="trackerStatus" class="text-[9px] font-mono font-bold text-gray-300 shrink-0">0/20</span>
+                </button>
+
+                <button id="bossBtn" type="button" class="pointer-events-auto rpg-btn rpg-btn-red px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0">
+                    <span>👹</span><span id="bossBtnText">首領</span>
+                </button>
             </div>
 
             <!-- 首領戰 / 加班防禦戰橫幅 -->
@@ -331,7 +327,7 @@
                     <div class="bg-[#201b2b] border border-cyan-500/40 rounded-lg p-2">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-bold text-cyan-300">目前出戰技能槽位 (4/4)</span>
-                            <span class="text-[10px] text-gray-400">點擊下方技能替換</span>
+                            <span class="text-[10px] text-gray-400">點擊下方技能替換 | 支援單次與 x10 升級</span>
                         </div>
                         <div id="equippedSlotsPreview" class="grid grid-cols-4 gap-1.5"></div>
                     </div>
@@ -854,86 +850,55 @@
             }
         }
 
-        // 每次重新載入頁面時皆建立空白臨時狀態，等待使用者於登入畫面登入個人帳號
-        let state = createDefaultAccountState(generatePlayerId(), '');
-        let isLoggedIn = false;
-        let buyMultiplier = 1;
-        let selectedDollIndex = null;
-        let activeCodexCat = 'dolls';
-        let skillTimers = {};
-        let isCloudSyncing = false;
-
-        /**
-         * ==========================================
-         * 3. 存檔、圖鑑與數值計算引擎
-         * ==========================================
-         */
         function formatNumber(num) {
-            if (num < 1000) return Math.floor(num).toString();
-            const units = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi'];
-            const tier = Math.floor(Math.log10(num) / 3);
-            if (tier >= units.length) return num.toExponential(2);
-            const scale = Math.pow(10, tier * 3);
-            const scaled = num / scale;
-            return scaled.toFixed(scaled < 10 ? 2 : 1) + units[tier];
+            const n = Number(num) || 0;
+            if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+            if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return Math.floor(n).toLocaleString('en-US');
         }
 
-        function loadState() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
-                const parsed = JSON.parse(raw);
-                const merged = {
-                    ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
-                    ...parsed,
-                    autoCloudSync: true,
-                    upgrades: { ...DEFAULT_STATE.upgrades, ...(parsed.upgrades || {}) },
-                    ownedWeapons: { ...DEFAULT_STATE.ownedWeapons, ...(parsed.ownedWeapons || {}) },
-                    unlockedSkills: { ...DEFAULT_STATE.unlockedSkills, ...(parsed.unlockedSkills || {}) },
-                    codex: {
-                        unlocked: { ...DEFAULT_STATE.codex.unlocked, ...((parsed.codex && parsed.codex.unlocked) || {}) },
-                        claimed: { ...((parsed.codex && parsed.codex.claimed) || {}) }
-                    },
-                    questProgress: { ...DEFAULT_STATE.questProgress, ...(parsed.questProgress || {}) },
-                    mine: { ...DEFAULT_STATE.mine, ...(parsed.mine || {}) },
-                    bounty: { ...DEFAULT_STATE.bounty, ...(parsed.bounty || {}) }
-                };
-                if (!Array.isArray(merged.dolls) || merged.dolls.length !== 20) {
-                    const arr = new Array(20).fill(null);
-                    if (Array.isArray(merged.dolls)) {
-                        merged.dolls.slice(0, 20).forEach((v, i) => { arr[i] = v; });
-                    }
-                    merged.dolls = arr;
-                }
-                return merged;
-            } catch (e) {
-                return JSON.parse(JSON.stringify(DEFAULT_STATE));
-            }
-        }
-
-        function saveState() {
-            if (!isLoggedIn || !state || !state.playerId) return;
-            try {
-                state.lastSaveTime = Date.now();
-                localStorage.setItem(STORAGE_PREFIX + state.playerId, JSON.stringify(state));
-                recordKnownAccount(state);
-            } catch (e) {}
-        }
-
+        let toastTimer = null;
         function showToast(msg) {
-            const toast = document.getElementById('toastBox');
-            toast.textContent = msg;
-            toast.style.opacity = '1';
-            clearTimeout(toast._timer);
-            toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+            const box = document.getElementById('toastBox');
+            if (!box) return;
+            box.textContent = msg;
+            box.classList.remove('opacity-0');
+            box.classList.add('opacity-100');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.remove('opacity-100');
+                box.classList.add('opacity-0');
+            }, 2200);
         }
 
-        function unlockCodexEntry(category, itemId) {
-            const key = `${category}:${itemId}`;
-            if (!state.codex.unlocked[key]) {
-                state.codex.unlocked[key] = true;
-                updateCodexRedDot();
-            }
+        function getRequiredExp(level) {
+            return Math.floor(80 * Math.pow(1.22, Math.max(0, level - 1)));
+        }
+
+        function getEquippedWeaponStats() {
+            const def = WEAPON_CATALOG.find(w => w.id === state.equippedWeapon) || WEAPON_CATALOG[0];
+            const own = state.ownedWeapons[def.id] || { level: 1, stars: 1, shards: 0 };
+            const lvlMult = 1 + (own.level - 1) * 0.14;
+            const starMult = 1 + (own.stars - 1) * 0.25;
+            return {
+                def,
+                own,
+                atkBonusPct: def.baseAtkPct * lvlMult * starMult,
+                critRateBonus: def.critRate * starMult,
+                critDmgBonus: def.critDmg * starMult
+            };
+        }
+
+        function getDollTotalBonus() {
+            let total = 0;
+            state.dolls.forEach(tier => {
+                if (!tier) return;
+                const d = DOLL_TIERS.find(item => item.tier === tier);
+                if (d) total += d.bonus;
+            });
+            return total;
         }
 
         function getAllCodexEntries() {
@@ -942,162 +907,198 @@
                     id: String(d.tier),
                     name: `T${d.tier} ${d.name}`,
                     icon: d.icon,
-                    desc: `玩偶提供 +${Math.round(d.bonus * 100)}% 全隊加成`,
+                    desc: `提供全隊 +${Math.round(d.bonus * 100)}% 攻擊加成`,
                     rewardCrystal: 5 + d.tier * 2
                 })),
                 weapons: WEAPON_CATALOG.map(w => ({
                     id: w.id,
                     name: w.name,
                     icon: w.icon,
-                    desc: `${w.rarityName}神兵 | 基礎攻擊 +${Math.round(w.baseAtkPct * 100)}%`,
-                    rewardCrystal: 10
+                    desc: `${w.rarityName}武器 | 基礎攻擊 +${Math.round(w.baseAtkPct * 100)}%`,
+                    rewardCrystal: 8
                 })),
                 monsters: [
-                    ...MONSTER_TYPES.map(m => ({ id: m.id, name: m.name, icon: m.icon, desc: m.desc, rewardCrystal: 6 })),
-                    ...BOUNTY_TEMPLATES.map(b => ({ id: b.id, name: b.name, icon: b.icon, desc: b.desc, rewardCrystal: 15 })),
-                    ...BOSS_CATALOG.map(bs => ({ id: bs.id, name: bs.name, icon: bs.icon, desc: bs.desc, rewardCrystal: 18 }))
+                    ...MONSTER_TYPES.map(m => ({
+                        id: m.id,
+                        name: m.name,
+                        icon: m.icon,
+                        desc: m.desc,
+                        rewardCrystal: 5
+                    })),
+                    ...BOUNTY_TEMPLATES.map(b => ({
+                        id: b.id,
+                        name: b.prefix + b.name,
+                        icon: b.icon,
+                        desc: b.desc,
+                        rewardCrystal: 10
+                    })),
+                    ...BOSS_CATALOG.map(bs => ({
+                        id: bs.id,
+                        name: bs.name,
+                        icon: bs.icon,
+                        desc: bs.desc,
+                        rewardCrystal: 12
+                    }))
                 ],
                 skills: SKILL_CATALOG.map(s => ({
                     id: s.id,
                     name: s.name,
                     icon: s.icon,
-                    desc: s.desc,
-                    rewardCrystal: 10
+                    desc: `技能倍率 ${s.mult}x | 冷卻 ${s.cd}s`,
+                    rewardCrystal: 8
                 })),
                 heroes: HERO_DATA.map(h => ({
                     id: h.id,
-                    name: h.name,
+                    name: `${h.name} (${h.title})`,
                     icon: h.icon,
-                    desc: `${h.title} | ${h.bonusText}`,
-                    rewardCrystal: 20
+                    desc: h.bonusText,
+                    rewardCrystal: 10
                 }))
             };
         }
 
         function getCodexStats() {
-            const all = getAllCodexEntries();
+            const entries = getAllCodexEntries();
             let total = 0;
             let unlockedCount = 0;
-            let unclaimedCount = 0;
+            let claimedCount = 0;
 
-            Object.keys(all).forEach(cat => {
-                all[cat].forEach(item => {
+            Object.keys(entries).forEach(cat => {
+                entries[cat].forEach(item => {
                     total++;
                     const key = `${cat}:${item.id}`;
-                    if (state.codex.unlocked[key]) {
+                    if (state.codex && state.codex.unlocked && state.codex.unlocked[key]) {
                         unlockedCount++;
-                        if (!state.codex.claimed[key]) unclaimedCount++;
+                    }
+                    if (state.codex && state.codex.claimed && state.codex.claimed[key]) {
+                        claimedCount++;
                     }
                 });
             });
 
-            return {
-                total,
-                unlockedCount,
-                unclaimedCount,
-                atkBonus: unlockedCount * 0.03,
-                goldBonus: unlockedCount * 0.02
-            };
+            const atkBonus = unlockedCount * 0.03 + claimedCount * 0.02;
+            const goldBonus = unlockedCount * 0.025 + claimedCount * 0.015;
+            return { total, unlockedCount, claimedCount, atkBonus, goldBonus };
         }
 
         function updateCodexRedDot() {
-            const cStats = getCodexStats();
             const dot = document.getElementById('codexRedDot');
-            if (dot) {
-                if (cStats.unclaimedCount > 0) dot.classList.remove('hidden');
-                else dot.classList.add('hidden');
-            }
-            const summaryEl = document.getElementById('codexBonusSummary');
-            if (summaryEl) summaryEl.textContent = `+${Math.round(cStats.atkBonus * 100)}%`;
-        }
-
-        function getDollTotalBonus() {
-            let bonus = 0;
-            state.dolls.forEach(tier => {
-                if (tier) {
-                    const info = DOLL_TIERS.find(d => d.tier === tier);
-                    if (info) bonus += info.bonus;
-                }
+            if (!dot) return;
+            const entries = getAllCodexEntries();
+            let hasUnclaimed = false;
+            Object.keys(entries).forEach(cat => {
+                entries[cat].forEach(item => {
+                    const key = `${cat}:${item.id}`;
+                    if (state.codex.unlocked[key] && !state.codex.claimed[key]) {
+                        hasUnclaimed = true;
+                    }
+                });
             });
-            return bonus;
+            if (hasUnclaimed) dot.classList.remove('hidden');
+            else dot.classList.add('hidden');
         }
 
-        function getEquippedWeaponStats() {
-            const wId = state.equippedWeapon || 'w_pickaxe';
-            const def = WEAPON_CATALOG.find(w => w.id === wId) || WEAPON_CATALOG[0];
-            const owned = state.ownedWeapons[wId] || { level: 1, stars: 1, shards: 0 };
-            const mult = (1 + (owned.level - 1) * 0.18) * (1 + (owned.stars - 1) * 0.35);
-            return {
-                def,
-                owned,
-                atkPct: def.baseAtkPct * mult,
-                critRate: def.critRate + (owned.stars - 1) * 0.01,
-                critDmg: def.critDmg * (1 + (owned.stars - 1) * 0.2)
-            };
-        }
-
-        function getStats() {
-            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
-            const dollMult = 1 + getDollTotalBonus();
-            const levelMult = 1 + (state.heroLevel - 1) * 0.12;
-            const wStats = getEquippedWeaponStats();
-            const cStats = getCodexStats();
-
-            const baseAtk = 18 + state.upgrades.atk * 14 * Math.pow(1.06, state.upgrades.atk - 1);
-            const atk = baseAtk * heroObj.atkMult * dollMult * levelMult * (1 + wStats.atkPct) * (1 + cStats.atkBonus);
-            const atkInterval = Math.max(0.16, 0.85 * Math.pow(0.975, state.upgrades.spd - 1));
-            const critRate = Math.min(0.90, 0.10 + (state.upgrades.critRate - 1) * 0.02 + wStats.critRate);
-            const critDmg = (2.0 + (state.upgrades.critDmg - 1) * 0.25 + wStats.critDmg) * (state.activeHero === 'terence' ? 1.5 : 1);
-            const goldMult = (1 + (state.upgrades.goldGain - 1) * 0.20) * (1 + getDollTotalBonus() * 0.4) * (1 + cStats.goldBonus);
-            const skillPowerMult = state.activeHero === 'zeus' ? 1.25 : 1.0;
-
-            return { atk, atkInterval, critRate, critDmg, goldMult, skillPowerMult, wStats };
-        }
-
-        function getUpgradeCost(key, level) {
-            const baseCosts = { atk: 25, spd: 40, critRate: 60, critDmg: 50, goldGain: 45 };
-            const growth = { atk: 1.24, spd: 1.32, critRate: 1.38, critDmg: 1.28, goldGain: 1.30 };
-            return Math.floor(baseCosts[key] * Math.pow(growth[key], level - 1));
-        }
-
-        function getMultiUpgradeCost(key, startLvl, count) {
-            let total = 0;
-            for (let i = 0; i < count; i++) total += getUpgradeCost(key, startLvl + i);
-            return total;
-        }
-
-        function getSummonDollCost() {
-            return Math.floor(100 * Math.pow(1.13, state.dollSummonCount));
-        }
-
-        function getForgeGoldCost() {
-            return Math.floor(500 * Math.pow(1.22, state.weaponForgeCount));
-        }
-
-        function getRequiredExp(lvl) {
-            return Math.floor(100 * Math.pow(1.28, lvl - 1));
+        function unlockCodexEntry(category, id) {
+            if (!state.codex) state.codex = { unlocked: {}, claimed: {} };
+            const key = `${category}:${id}`;
+            if (!state.codex.unlocked[key]) {
+                state.codex.unlocked[key] = true;
+                updateCodexRedDot();
+            }
         }
 
         function addQuestProgress(questId, amount = 1) {
-            if (!state.questProgress[questId]) return;
+            if (!state.questProgress || !state.questProgress[questId]) return;
             state.questProgress[questId].count += amount;
             updateQuestTrackerUI();
         }
 
-        /**
-         * ==========================================
-         * 4. 背景 Google 試算表自動同步模組
-         * ==========================================
-         */
+        function getStats() {
+            const heroDef = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const wStats = getEquippedWeaponStats();
+            const dollBonus = getDollTotalBonus();
+            const cStats = getCodexStats();
+
+            const baseAtk = 14 + (state.heroLevel - 1) * 5 + ((state.upgrades.atk || 1) - 1) * 7;
+            const totalMult = (heroDef.atkMult || 1) * (1 + dollBonus + wStats.atkBonusPct + cStats.atkBonus);
+            const atk = Math.max(1, Math.floor(baseAtk * totalMult));
+
+            const spdLvl = state.upgrades.spd || 1;
+            const atkInterval = Math.max(0.24, 0.72 * Math.pow(0.96, spdLvl - 1));
+
+            const critRate = Math.min(0.95, 0.10 + ((state.upgrades.critRate || 1) - 1) * 0.015 + wStats.critRateBonus);
+            const critDmg = 1.6 + ((state.upgrades.critDmg || 1) - 1) * 0.08 + wStats.critDmgBonus + (state.activeHero === 'terence' ? 0.50 : 0);
+            const goldMult = (1 + ((state.upgrades.goldGain || 1) - 1) * 0.12) * (1 + cStats.goldBonus);
+            const skillPowerMult = state.activeHero === 'zeus' ? 1.25 : 1.0;
+
+            return { atk, atkInterval, critRate, critDmg, goldMult, skillPowerMult, wStats, cStats };
+        }
+
+        function getSingleUpgradeCost(key, level) {
+            const baseMap = { atk: 60, spd: 90, critRate: 110, critDmg: 100, goldGain: 80 };
+            const growthMap = { atk: 1.22, spd: 1.26, critRate: 1.28, critDmg: 1.25, goldGain: 1.24 };
+            const base = baseMap[key] || 80;
+            const growth = growthMap[key] || 1.24;
+            return Math.floor(base * Math.pow(growth, Math.max(0, level - 1)));
+        }
+
+        function getMultiUpgradeCost(key, currentLevel, count = 1) {
+            let sum = 0;
+            for (let i = 0; i < count; i++) {
+                sum += getSingleUpgradeCost(key, currentLevel + i);
+            }
+            return sum;
+        }
+
+        function getSummonDollCost() {
+            return Math.floor(100 * Math.pow(1.16, state.dollSummonCount || 0));
+        }
+
+        function getForgeGoldCost() {
+            return Math.floor(500 * Math.pow(1.25, state.weaponForgeCount || 0));
+        }
+
+        function getSkillUpgradeCost(currentLevel, count = 1) {
+            let total = 0;
+            for (let i = 0; i < count; i++) {
+                total += Math.floor(150 * Math.pow(1.35, Math.max(0, currentLevel + i - 1)));
+            }
+            return total;
+        }
+
+        // 每次重新載入頁面時皆建立空白臨時狀態，等待使用者於登入畫面登入個人帳號
+        let state = createDefaultAccountState(generatePlayerId(), '');
+        let isLoggedIn = false;
+        let buyMultiplier = 1;
+        let selectedDollIndex = null;
+        let activeCodexCat = 'dolls';
+        let skillTimers = {};
+        let isCloudSyncing = false;
+        let queuedCloudSync = false;
+
+        function saveState() {
+            if (!isLoggedIn || !state || !state.playerId) return;
+            state.lastSaveTime = Date.now();
+            try {
+                localStorage.setItem(STORAGE_PREFIX + state.playerId, JSON.stringify(state));
+                recordKnownAccount(state);
+            } catch (e) {}
+        }
+
         function buildCloudPayload() {
             const cStats = getCodexStats();
-            const nowStr = new Date().toLocaleString('zh-TW', { hour12: false });
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const syncedAt = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
             return {
                 playerId: state.playerId,
                 playerName: state.playerName,
-                syncedAt: nowStr,
-                currentFloor: `B${state.floor}F`,
-                maxFloor: `B${state.maxFloor}F`,
+                syncedAt,
+                floor: state.floor,
+                maxFloor: state.maxFloor,
+                floorText: `B${state.floor}F`,
+                maxFloorText: `B${state.maxFloor}F`,
                 heroLevel: state.heroLevel,
                 gold: Math.floor(state.gold),
                 crystals: Math.floor(state.crystals),
@@ -1111,10 +1112,15 @@
             };
         }
 
-        async function pushSaveToGoogleSheets() {
+        async function pushSaveToGoogleSheets(forceImmediate = false) {
             if (!isLoggedIn || !state.playerId) return;
             saveState();
-            if (!GAS_EXEC_URL || isCloudSyncing) return;
+            if (!GAS_EXEC_URL) return;
+
+            if (isCloudSyncing) {
+                queuedCloudSync = true;
+                return;
+            }
 
             isCloudSyncing = true;
             const syncIcon = document.getElementById('syncStatusIcon');
@@ -1130,819 +1136,416 @@
                 });
                 state.lastCloudSyncTime = payload.syncedAt;
                 saveState();
-                if (syncIcon) syncIcon.textContent = '自動';
+                if (syncIcon) syncIcon.textContent = '已同步';
+                if (forceImmediate) {
+                    showToast(`☁️ 已同步帳號 ${state.playerId} 至 Google 試算表`);
+                }
             } catch (err) {
-                if (syncIcon) syncIcon.textContent = '自動';
+                if (syncIcon) syncIcon.textContent = '重試中';
+                if (forceImmediate) {
+                    showToast('⚠️ 雲端同步連線異常，將於背景持續重試');
+                }
             } finally {
                 isCloudSyncing = false;
+                if (queuedCloudSync) {
+                    queuedCloudSync = false;
+                    setTimeout(() => pushSaveToGoogleSheets(false), 400);
+                }
             }
         }
 
         async function tryFetchCloudSave(playerId) {
-            if (!GAS_EXEC_URL) return null;
+            const cleanId = sanitizePlayerId(playerId);
+            if (!GAS_EXEC_URL || !cleanId) return null;
             try {
-                const url = `${GAS_EXEC_URL}?playerId=${encodeURIComponent(playerId)}`;
-                const resp = await fetch(url, { method: 'GET' });
-                if (!resp.ok) return null;
-                const json = await resp.json();
-                if (json && json.ok && json.found && json.data && json.data.saveJson) {
-                    return JSON.parse(json.data.saveJson);
+                const res = await fetch(`${GAS_EXEC_URL}?playerId=${encodeURIComponent(cleanId)}`);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data && data.ok && data.found && data.saveJson) {
+                    const parsed = typeof data.saveJson === 'string' ? JSON.parse(data.saveJson) : data.saveJson;
+                    return normalizeLoadedState(parsed, cleanId, (data.data && data.data.playerName) || '');
                 }
             } catch (e) {}
             return null;
         }
 
-        /**
-         * ==========================================
-         * 5. 三層地下城 Canvas 戰鬥引擎
-         * ==========================================
-         */
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wrapper = document.getElementById('canvasWrapper');
+        function updateQuestTrackerUI() {
+            const titleEl = document.getElementById('trackerTitle');
+            const barEl = document.getElementById('trackerBar');
+            const statusEl = document.getElementById('trackerStatus');
+            const dotEl = document.getElementById('questRedDot');
+            if (!titleEl || !barEl || !statusEl) return;
 
-        let cw = 400;
-        let ch = 360;
-        let platforms = [];
+            let readyQuest = null;
+            const list = QUEST_DEFS.map(q => {
+                const prog = (state.questProgress && state.questProgress[q.id]) || { count: 0, tier: 0 };
+                const target = q.baseTarget + prog.tier * q.step;
+                const rewardAmt = q.baseReward + prog.tier * Math.max(2, Math.floor(q.baseReward * 0.4));
+                const done = prog.count >= target;
+                return { ...q, count: prog.count, tier: prog.tier, target, rewardAmt, done };
+            });
 
-        function resizeCanvas() {
-            const rect = wrapper.getBoundingClientRect();
-            const scale = 0.75;
-            cw = Math.max(280, Math.floor(rect.width * scale));
-            ch = Math.max(220, Math.floor(rect.height * scale));
-            canvas.width = cw;
-            canvas.height = ch;
-
-            const usableTop = 44;
-            const usableBottom = ch - 76;
-            const span = usableBottom - usableTop;
-            platforms = [
-                { y: usableTop + span * 0.25, x1: cw * 0.08, x2: cw * 0.92 },
-                { y: usableTop + span * 0.60, x1: cw * 0.05, x2: cw * 0.95 },
-                { y: usableBottom, x1: 0, x2: cw }
-            ];
-        }
-        window.addEventListener('resize', resizeCanvas);
-
-        const hero = { x: 100, y: 100, dir: 1, tier: 1, attackTimer: 0, jumpAnim: 0, swingAnim: 0 };
-        let monsters = [];
-        let boss = null;
-        let defenseMode = null;
-        let damageNumbers = [];
-        let particles = [];
-        let lightnings = [];
-        let meteors = [];
-        let slashes = [];
-        let icicles = [];
-        let shadowClones = [];
-        let holyBeams = [];
-        let acidZones = [];
-        let blackHole = null;
-        let drops = [];
-        let screenShake = 0;
-
-        function spawnMonster(forceTier = null, isBountyTarget = false) {
-            if (boss || platforms.length === 0) return;
-            const tier = forceTier !== null ? forceTier : Math.floor(Math.random() * platforms.length);
-            const plat = platforms[tier];
-            const floorScale = Math.pow(1.38, state.floor - 1);
-
-            if (isBountyTarget) {
-                const tpl = BOUNTY_TEMPLATES[state.bounty.templateIdx % BOUNTY_TEMPLATES.length];
-                const maxHp = Math.floor(55 * floorScale * tpl.hpMult);
-                monsters.push({
-                    id: Math.random(),
-                    codexId: tpl.id,
-                    name: tpl.prefix + tpl.name,
-                    color: tpl.color,
-                    accent: tpl.accent,
-                    size: 28,
-                    tier,
-                    x: plat.x1 + 25 + Math.random() * Math.max(10, plat.x2 - plat.x1 - 50),
-                    y: plat.y,
-                    vx: (Math.random() < 0.5 ? -1 : 1) * 18,
-                    hp: maxHp,
-                    maxHp,
-                    hitFlash: 0,
-                    freezeTimer: 0,
-                    acidVulnTimer: 0,
-                    isBounty: true,
-                    bountyTpl: tpl
-                });
-                return;
+            readyQuest = list.find(item => item.done) || list[0];
+            if (dotEl) {
+                if (list.some(item => item.done)) dotEl.classList.remove('hidden');
+                else dotEl.classList.add('hidden');
             }
 
-            const type = MONSTER_TYPES[Math.floor(Math.random() * MONSTER_TYPES.length)];
-            const maxHp = Math.floor(45 * floorScale * type.hpMult);
-            monsters.push({
-                id: Math.random(),
-                codexId: type.id,
-                name: type.name,
-                color: type.color,
-                accent: type.accent,
-                size: type.size,
-                tier,
-                x: plat.x1 + 20 + Math.random() * Math.max(10, plat.x2 - plat.x1 - 40),
-                y: plat.y,
-                vx: (Math.random() < 0.5 ? -1 : 1) * (12 + Math.random() * 14),
-                hp: maxHp,
-                maxHp,
-                hitFlash: 0,
-                freezeTimer: 0,
-                acidVulnTimer: 0,
-                isBounty: false
-            });
-        }
-
-        function startBossBattle() {
-            if (boss || defenseMode || platforms.length === 0) return;
-            monsters = [];
-            const floorScale = Math.pow(1.42, state.floor - 1);
-            const maxHp = Math.floor(650 * floorScale);
-            const bossIdx = (state.floor - 1) % BOSS_CATALOG.length;
-            const bossDef = BOSS_CATALOG[bossIdx];
-            const midPlat = platforms[1];
-
-            boss = {
-                codexId: bossDef.id,
-                name: bossDef.name,
-                tier: 1,
-                x: cw * 0.65,
-                y: midPlat.y,
-                hp: maxHp,
-                maxHp,
-                timer: 30.0,
-                hitFlash: 0,
-                freezeTimer: 0,
-                acidVulnTimer: 0
-            };
-
-            const banner = document.getElementById('specialBannerContainer');
-            banner.classList.remove('hidden', 'border-cyan-500');
-            banner.classList.add('border-red-500/80');
-            document.getElementById('specialBannerTitle').className = 'text-red-400';
-            document.getElementById('specialBannerTitle').textContent = `💀 B${state.floor}F 首領：${bossDef.name}`;
-            document.getElementById('bossBtnText').textContent = '首領戰中';
-            document.getElementById('bossBtn').disabled = true;
-            screenShake = 8;
-            audio.playExplosion();
-        }
-
-        function endBossBattle(victory) {
-            const defeatedBossId = boss ? boss.codexId : null;
-            boss = null;
-            document.getElementById('specialBannerContainer').classList.add('hidden');
-            document.getElementById('bossBtn').disabled = false;
-            document.getElementById('bossBtnText').textContent = '首領';
-
-            if (victory) {
-                if (defeatedBossId) unlockCodexEntry('monsters', defeatedBossId);
-                state.floor++;
-                if (state.floor > state.maxFloor) state.maxFloor = state.floor;
-                HERO_DATA.forEach(h => {
-                    if (state.maxFloor >= h.unlockFloor) unlockCodexEntry('heroes', h.id);
-                });
-                state.killsInFloor = 0;
-                addQuestProgress('q_boss', 1);
-                audio.playLevelUp();
-                showToast(`🎉 突破至地下 B${state.floor}F！`);
-                renderHeroRoster();
-                pushSaveToGoogleSheets();
+            if (readyQuest.done) {
+                titleEl.textContent = `🎁 點擊領獎：${readyQuest.title}`;
+                barEl.style.width = '100%';
+                statusEl.textContent = '領取!';
+                statusEl.className = 'text-[9px] font-mono font-bold text-amber-300 shrink-0';
             } else {
-                state.killsInFloor = 0;
-                showToast('⚠️ 挑戰首領超時，繼續在當前樓層練功！');
+                titleEl.textContent = `📋 委託：${readyQuest.title}`;
+                const pct = Math.min(100, Math.floor((readyQuest.count / Math.max(1, readyQuest.target)) * 100));
+                barEl.style.width = `${pct}%`;
+                statusEl.textContent = `${readyQuest.count}/${readyQuest.target}`;
+                statusEl.className = 'text-[9px] font-mono font-bold text-gray-300 shrink-0';
             }
-
-            for (let i = 0; i < 8; i++) spawnMonster();
-            saveState();
         }
 
-        function startDefenseMode() {
-            if (boss || defenseMode) {
-                showToast('⚠️ 目前正在進行特殊戰鬥中！');
-                return;
-            }
-            monsters = [];
-            const targetKills = 30 + state.floor * 3;
-            defenseMode = { timer: 30.0, kills: 0, targetKills };
+        function claimQuestReward(questId) {
+            const q = QUEST_DEFS.find(item => item.id === questId);
+            if (!q || !state.questProgress || !state.questProgress[questId]) return;
+            const prog = state.questProgress[questId];
+            const target = q.baseTarget + prog.tier * q.step;
+            if (prog.count < target) return;
 
-            const banner = document.getElementById('specialBannerContainer');
-            banner.classList.remove('hidden', 'border-red-500/80');
-            banner.classList.add('border-cyan-500');
-            document.getElementById('specialBannerTitle').className = 'text-cyan-300';
-            document.getElementById('specialBannerTitle').textContent = `🛡️ 加班防禦戰：擊殺 0/${targetKills}`;
-            document.getElementById('bossBtn').disabled = true;
-
-            for (let i = 0; i < 14; i++) spawnMonster();
-            audio.playLightning();
-            showToast('🛡️ 無盡怪物潮來襲！30 秒內達成擊殺目標拿獎勵！');
-        }
-
-        function endDefenseMode() {
-            if (!defenseMode) return;
-            const success = defenseMode.kills >= defenseMode.targetKills;
-            const kills = defenseMode.kills;
-            defenseMode = null;
-
-            document.getElementById('specialBannerContainer').classList.add('hidden');
-            document.getElementById('bossBtn').disabled = false;
-            monsters = [];
-            for (let i = 0; i < 8; i++) spawnMonster();
-
-            if (success) {
-                const stats = getStats();
-                const floorScale = Math.pow(1.32, state.floor - 1);
-                const bonusGold = Math.floor(350 * floorScale * stats.goldMult);
-                const bonusCrystals = 15 + Math.floor(state.floor * 1.5);
-                state.gold += bonusGold;
-                state.crystals += bonusCrystals;
-                const emptyIdx = state.dolls.findIndex(d => d === null);
-                if (emptyIdx !== -1) {
-                    state.dolls[emptyIdx] = 2;
-                    unlockCodexEntry('dolls', '2');
-                }
-                audio.playLevelUp();
-                showToast(`🏆 防禦成功 (${kills}殺)！獲得 🪙${formatNumber(bonusGold)} 與 💠${bonusCrystals}！`);
+            const rewardAmt = q.baseReward + prog.tier * Math.max(2, Math.floor(q.baseReward * 0.4));
+            if (q.rewardType === 'crystal') {
+                state.crystals += rewardAmt;
+                showToast(`💠 領取委託獎勵 +${rewardAmt} 技能結晶！`);
             } else {
-                showToast(`🛡️ 防禦結束 (擊殺 ${kills})，保留所有打怪收益！`);
+                const gainedGold = Math.floor(rewardAmt * getStats().goldMult);
+                state.gold += gainedGold;
+                showToast(`🪙 領取委託獎勵 +${formatNumber(gainedGold)} 金幣！`);
             }
-            renderSubtabContent('defense');
-            saveState();
+
+            prog.count = Math.max(0, prog.count - target);
+            prog.tier += 1;
+            audio.playCoin();
+            updateQuestTrackerUI();
+            syncTopAndBattleUI();
+            renderDailyQuests();
+            pushSaveToGoogleSheets(false);
         }
 
-        function spawnDamageNumber(x, y, amount, isCrit, colorOverride = null) {
-            if (damageNumbers.length > 75) damageNumbers.shift();
-            damageNumbers.push({
-                x: x + (Math.random() - 0.5) * 28,
-                y: y - 14 - Math.random() * 14,
-                vy: -40 - Math.random() * 22,
-                text: formatNumber(amount),
-                isCrit,
-                color: colorOverride,
-                life: 0.85
-            });
-        }
+        function renderDailyQuests() {
+            const box = document.getElementById('subtab-daily');
+            if (!box) return;
+            box.innerHTML = '';
 
-        function spawnParticles(x, y, color, count = 8, speed = 70) {
-            for (let i = 0; i < count; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const spd = (0.3 + Math.random() * 0.7) * speed;
-                particles.push({
-                    x,
-                    y,
-                    vx: Math.cos(angle) * spd,
-                    vy: Math.sin(angle) * spd - 20,
-                    size: 2 + Math.random() * 3,
-                    color,
-                    life: 0.35 + Math.random() * 0.25
-                });
-            }
-        }
+            QUEST_DEFS.forEach(q => {
+                const prog = (state.questProgress && state.questProgress[q.id]) || { count: 0, tier: 0 };
+                const target = q.baseTarget + prog.tier * q.step;
+                const rewardAmt = q.baseReward + prog.tier * Math.max(2, Math.floor(q.baseReward * 0.4));
+                const done = prog.count >= target;
+                const pct = Math.min(100, Math.floor((prog.count / Math.max(1, target)) * 100));
 
-        function spawnDrop(x, y, goldVal, expVal) {
-            drops.push({
-                x,
-                y: y - 8,
-                vx: (Math.random() - 0.5) * 60,
-                vy: -60 - Math.random() * 40,
-                gold: goldVal,
-                exp: expVal,
-                timer: 0.35
-            });
-        }
-
-        function damageTarget(target, rawDmg, isSkill = false, colorOverride = null) {
-            if (!target || target.hp <= 0) return;
-            const stats = getStats();
-            const isCrit = Math.random() < stats.critRate;
-            const vulnMult = target.acidVulnTimer > 0 ? 1.25 : 1.0;
-            const finalDmg = Math.max(1, Math.floor(rawDmg * vulnMult * (isCrit ? stats.critDmg : 1)));
-
-            target.hp -= finalDmg;
-            target.hitFlash = 0.09;
-            spawnDamageNumber(target.x, target.y - 16, finalDmg, isCrit, colorOverride || (isSkill ? null : stats.wStats.def.bladeColor));
-
-            if (!isSkill) audio.playHit(isCrit);
-
-            if (target.hp <= 0) {
-                if (target.codexId) unlockCodexEntry('monsters', target.codexId);
-
-                const floorRewardScale = Math.pow(1.32, state.floor - 1);
-                const isBossTarget = target === boss;
-                let goldReward = Math.floor((isBossTarget ? 120 : 12) * floorRewardScale * stats.goldMult);
-                const expReward = Math.floor((isBossTarget ? 150 : 16) * floorRewardScale);
-
-                if (target.isBounty && target.bountyTpl) {
-                    goldReward *= target.bountyTpl.goldMult;
-                    state.bounty.active = false;
-                    state.bounty.completed = true;
-                    state.totalBounties++;
-                    showToast(`🎯 已擊殺懸賞目標【${target.name}】！請至支線領賞`);
-                    renderSubtabContent('bounty');
-                }
-
-                spawnParticles(target.x, target.y - 10, isBossTarget ? '#f97316' : target.accent, isBossTarget ? 28 : 10, 90);
-                spawnDrop(target.x, target.y, goldReward, expReward);
-
-                state.totalKills++;
-                addQuestProgress('q_kill', 1);
-
-                if (isBossTarget) {
-                    endBossBattle(true);
-                } else {
-                    monsters = monsters.filter(m => m !== target);
-                    if (defenseMode) {
-                        defenseMode.kills++;
-                        spawnMonster();
-                    } else {
-                        state.killsInFloor++;
-                        if (state.killsInFloor >= 10) {
-                            state.killsInFloor = 10;
-                            startBossBattle();
-                        } else {
-                            spawnMonster();
-                        }
-                    }
-                }
-            }
-        }
-
-        function triggerSkillById(skillId, manual = false) {
-            const def = SKILL_CATALOG.find(s => s.id === skillId);
-            const lvl = state.unlockedSkills[skillId];
-            if (!def || !lvl) return;
-
-            if ((skillTimers[skillId] || 0) > 0) return;
-            if (state.mp < def.mpCost) {
-                if (manual) showToast('💧 魔力 (MP) 不足！');
-                return;
-            }
-
-            state.mp -= def.mpCost;
-            skillTimers[skillId] = def.cd;
-            state.totalSkills++;
-            addQuestProgress('q_skill', 1);
-
-            const stats = getStats();
-            const skillScale = 1 + (lvl - 1) * 0.35;
-            const baseSkillDmg = stats.atk * def.mult * skillScale * stats.skillPowerMult;
-            const allTargets = boss ? [boss] : [...monsters];
-
-            switch (skillId) {
-                case 'lightning':
-                    audio.playLightning();
-                    screenShake = 6;
-                    allTargets.forEach(t => {
-                        for (let h = 0; h < 3; h++) {
-                            setTimeout(() => {
-                                if (t.hp > 0) {
-                                    damageTarget(t, baseSkillDmg / 3, true, '#38bdf8');
-                                    lightnings.push({ x1: t.x + (Math.random() - 0.5) * 60, y1: 0, x2: t.x, y2: t.y - 10, life: 0.22 });
-                                    spawnParticles(t.x, t.y - 12, '#38bdf8', 5, 65);
-                                }
-                            }, h * 65);
-                        }
-                    });
-                    break;
-                case 'meteor':
-                    audio.playExplosion();
-                    screenShake = 10;
-                    const mCount = Math.min(5, Math.max(3, allTargets.length));
-                    for (let i = 0; i < mCount; i++) {
-                        const target = allTargets[i % allTargets.length] || { x: cw * (0.2 + i * 0.15), y: platforms[1].y };
-                        meteors.push({ x: target.x - 90, y: -30 - i * 25, tx: target.x, ty: target.y, speed: 420, dmg: baseSkillDmg * 0.55 });
-                    }
-                    break;
-                case 'slash':
-                    audio.playSlash();
-                    screenShake = 4;
-                    slashes.push({ x: hero.x, y: hero.y - 12, dir: hero.dir, life: 0.3 });
-                    allTargets.forEach(t => {
-                        if (Math.abs(t.tier - hero.tier) <= 1) {
-                            damageTarget(t, baseSkillDmg, true, '#d8b4fe');
-                            spawnParticles(t.x, t.y - 10, '#c084fc', 6, 55);
-                        }
-                    });
-                    break;
-                case 'blizzard':
-                    audio.playFrost();
-                    screenShake = 5;
-                    for (let i = 0; i < 14; i++) icicles.push({ x: 15 + Math.random() * (cw - 30), y: -20 - Math.random() * 80, vy: 340 + Math.random() * 120, life: 0.75 });
-                    allTargets.forEach(t => {
-                        t.freezeTimer = 2.5;
-                        damageTarget(t, baseSkillDmg, true, '#7dd3fc');
-                        spawnParticles(t.x, t.y - 12, '#bae6fd', 8, 55);
-                    });
-                    break;
-                case 'judgment':
-                    audio.playHoly();
-                    screenShake = 7;
-                    state.hp = Math.min(state.maxHp, state.hp + state.maxHp * 0.3);
-                    spawnParticles(hero.x, hero.y - 14, '#4ade80', 12, 60);
-                    for (let b = 0; b < 4; b++) holyBeams.push({ x: cw * (0.18 + b * 0.21), width: 22, life: 0.55 });
-                    allTargets.forEach(t => {
-                        damageTarget(t, baseSkillDmg, true, '#fde047');
-                        spawnParticles(t.x, t.y - 15, '#fef08a', 7, 70);
-                    });
-                    break;
-                case 'acid':
-                    audio.playAcid();
-                    platforms.forEach((plat, idx) => {
-                        const zx = plat.x1 + 25 + Math.random() * Math.max(10, plat.x2 - plat.x1 - 90);
-                        acidZones.push({ tier: idx, x: zx, y: plat.y, width: 75, life: 4.0, tickTimer: 0, tickDmg: baseSkillDmg * 0.24 });
-                    });
-                    break;
-                case 'blackhole':
-                    audio.playBlackHole();
-                    screenShake = 9;
-                    blackHole = { x: cw * 0.5, y: ch * 0.44, life: 1.8, maxLife: 1.8, finalDmg: baseSkillDmg };
-                    break;
-                case 'overload':
-                    audio.playLightning();
-                    screenShake = 6;
-                    [0, 2].forEach((platIdx, idx) => {
-                        const plat = platforms[platIdx] || platforms[1];
-                        shadowClones.push({
-                            x: idx === 0 ? plat.x1 + 10 : plat.x2 - 10,
-                            y: plat.y,
-                            dir: idx === 0 ? 1 : -1,
-                            speed: 360,
-                            life: 0.65,
-                            dmgPerHit: baseSkillDmg * 0.38,
-                            color: '#fbbf24',
-                            hitSet: new Set()
-                        });
-                    });
-                    break;
-            }
-        }
-
-        let lastTime = performance.now();
-        let uiSyncTimer = 0;
-        let autoSaveTimer = 0;
-        let autoCloudSyncTimer = 0;
-
-        function update(dt) {
-            if (!isLoggedIn) return;
-            state.shiftSeconds += dt;
-            const stats = getStats();
-
-            state.mp = Math.min(state.maxMp, state.mp + 14 * dt);
-            state.hp = Math.min(state.maxHp, state.hp + 3 * dt);
-
-            Object.keys(skillTimers).forEach(id => {
-                if (skillTimers[id] > 0) skillTimers[id] = Math.max(0, skillTimers[id] - dt);
-            });
-
-            if (state.autoSkill && (monsters.length > 0 || boss)) {
-                state.equippedSkills.forEach(skId => {
-                    if (skId && (skillTimers[skId] || 0) <= 0) {
-                        const def = SKILL_CATALOG.find(s => s.id === skId);
-                        if (def && state.mp >= def.mpCost) triggerSkillById(skId, false);
-                    }
-                });
-            }
-
-            if (state.mine.activeRoute && !state.mine.readyToClaim && Date.now() >= state.mine.endTime) {
-                state.mine.readyToClaim = true;
-                showToast('⛏️ 深淵礦坑開採完成！可領取礦石結晶');
-                renderSubtabContent('mine');
-            }
-
-            if (defenseMode) {
-                defenseMode.timer -= dt;
-                const bar = document.getElementById('specialBannerBar');
-                const timerEl = document.getElementById('specialBannerTimer');
-                const titleEl = document.getElementById('specialBannerTitle');
-                if (bar && timerEl && titleEl) {
-                    bar.style.width = `${Math.max(0, (defenseMode.timer / 30) * 100)}%`;
-                    timerEl.textContent = `${Math.max(0, defenseMode.timer).toFixed(1)}s`;
-                    titleEl.textContent = `🛡️ 加班防禦戰：擊殺 ${defenseMode.kills}/${defenseMode.targetKills}`;
-                }
-                if (defenseMode.timer <= 0) endDefenseMode();
-            }
-
-            const targetList = boss ? [boss] : monsters;
-            if (targetList.length > 0 && platforms.length > 0) {
-                let nearest = targetList[0];
-                let bestScore = Infinity;
-                targetList.forEach(m => {
-                    const dist = Math.abs(m.x - hero.x) + Math.abs(m.tier - hero.tier) * 140;
-                    if (dist < bestScore) { bestScore = dist; nearest = m; }
-                });
-
-                if (nearest.tier !== hero.tier && hero.jumpAnim <= 0) {
-                    hero.tier = nearest.tier;
-                    hero.y = platforms[hero.tier].y;
-                    hero.jumpAnim = 0.25;
-                    spawnParticles(hero.x, hero.y, '#94a3b8', 4, 30);
-                }
-
-                const dx = nearest.x - hero.x;
-                if (Math.abs(dx) > 26) {
-                    hero.dir = dx > 0 ? 1 : -1;
-                    hero.x += hero.dir * 105 * dt;
-                } else {
-                    hero.dir = dx >= 0 ? 1 : -1;
-                    hero.attackTimer += dt;
-                    if (hero.attackTimer >= stats.atkInterval) {
-                        hero.attackTimer = 0;
-                        hero.swingAnim = 0.16;
-                        spawnParticles(hero.x + hero.dir * 16, hero.y - 12, stats.wStats.def.bladeColor, 3, 40);
-                        targetList.forEach(m => {
-                            if (m.tier === hero.tier && Math.abs(m.x - hero.x) < 60) {
-                                damageTarget(m, stats.atk, false);
-                            }
-                        });
-                    }
-                }
-            }
-
-            if (hero.jumpAnim > 0) hero.jumpAnim = Math.max(0, hero.jumpAnim - dt);
-            if (hero.swingAnim > 0) hero.swingAnim = Math.max(0, hero.swingAnim - dt);
-
-            monsters.forEach(m => {
-                const plat = platforms[m.tier];
-                if (!plat) return;
-                if (m.freezeTimer > 0) m.freezeTimer = Math.max(0, m.freezeTimer - dt);
-                else {
-                    m.x += m.vx * dt;
-                    if (m.x < plat.x1 + 12) { m.x = plat.x1 + 12; m.vx *= -1; }
-                    if (m.x > plat.x2 - 12) { m.x = plat.x2 - 12; m.vx *= -1; }
-                }
-                if (m.acidVulnTimer > 0) m.acidVulnTimer = Math.max(0, m.acidVulnTimer - dt);
-                if (m.hitFlash > 0) m.hitFlash = Math.max(0, m.hitFlash - dt);
-            });
-
-            if (boss) {
-                boss.timer -= dt;
-                if (boss.freezeTimer > 0) boss.freezeTimer = Math.max(0, boss.freezeTimer - dt);
-                if (boss.acidVulnTimer > 0) boss.acidVulnTimer = Math.max(0, boss.acidVulnTimer - dt);
-                if (boss.hitFlash > 0) boss.hitFlash = Math.max(0, boss.hitFlash - dt);
-                if (boss.timer <= 0) endBossBattle(false);
-            }
-
-            for (let i = meteors.length - 1; i >= 0; i--) {
-                const met = meteors[i];
-                const angle = Math.atan2(met.ty - met.y, met.tx - met.x);
-                met.x += Math.cos(angle) * met.speed * dt;
-                met.y += Math.sin(angle) * met.speed * dt;
-                spawnParticles(met.x, met.y, '#f97316', 1, 20);
-                if (met.y >= met.ty - 5) {
-                    spawnParticles(met.tx, met.ty - 10, '#facc15', 14, 95);
-                    const targets = boss ? [boss] : [...monsters];
-                    targets.forEach(t => { if (Math.hypot(t.x - met.tx, t.y - met.ty) < 78) damageTarget(t, met.dmg, true, '#fb923c'); });
-                    meteors.splice(i, 1);
-                }
-            }
-
-            for (let i = icicles.length - 1; i >= 0; i--) {
-                icicles[i].y += icicles[i].vy * dt;
-                icicles[i].life -= dt;
-                if (icicles[i].life <= 0 || icicles[i].y > ch) icicles.splice(i, 1);
-            }
-
-            for (let i = shadowClones.length - 1; i >= 0; i--) {
-                const sc = shadowClones[i];
-                sc.x += sc.dir * sc.speed * dt;
-                sc.life -= dt;
-                const targets = boss ? [boss] : [...monsters];
-                targets.forEach(t => {
-                    if (!sc.hitSet.has(t) && Math.abs(t.x - sc.x) < 28 && Math.abs(t.y - sc.y) < 35) {
-                        sc.hitSet.add(t);
-                        damageTarget(t, sc.dmgPerHit, true, sc.color || '#a5b4fc');
-                    }
-                });
-                if (sc.life <= 0) shadowClones.splice(i, 1);
-            }
-
-            holyBeams.forEach(b => { b.life -= dt; });
-            holyBeams = holyBeams.filter(b => b.life > 0);
-
-            for (let i = acidZones.length - 1; i >= 0; i--) {
-                const az = acidZones[i];
-                az.life -= dt;
-                az.tickTimer += dt;
-                if (az.tickTimer >= 0.5) {
-                    az.tickTimer = 0;
-                    const targets = boss ? [boss] : [...monsters];
-                    targets.forEach(t => {
-                        if (t.tier === az.tier && t.x >= az.x - 10 && t.x <= az.x + az.width + 10) {
-                            t.acidVulnTimer = 1.5;
-                            damageTarget(t, az.tickDmg, true, '#a3e635');
-                        }
-                    });
-                }
-                if (az.life <= 0) acidZones.splice(i, 1);
-            }
-
-            if (blackHole) {
-                blackHole.life -= dt;
-                monsters.forEach(m => { m.x += (blackHole.x - m.x) * 2.4 * dt; });
-                if (blackHole.life <= 0) {
-                    audio.playExplosion();
-                    screenShake = 12;
-                    spawnParticles(blackHole.x, blackHole.y, '#e879f9', 30, 120);
-                    const targets = boss ? [boss] : [...monsters];
-                    targets.forEach(t => damageTarget(t, blackHole.finalDmg, true, '#f0abfc'));
-                    blackHole = null;
-                }
-            }
-
-            lightnings.forEach(l => { l.life -= dt; });
-            lightnings = lightnings.filter(l => l.life > 0);
-            slashes.forEach(s => { s.x += s.dir * 260 * dt; s.life -= dt; });
-            slashes = slashes.filter(s => s.life > 0);
-
-            damageNumbers.forEach(d => { d.y += d.vy * dt; d.vy *= 0.94; d.life -= dt; });
-            damageNumbers = damageNumbers.filter(d => d.life > 0);
-
-            particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 180 * dt; p.life -= dt; });
-            particles = particles.filter(p => p.life > 0);
-
-            for (let i = drops.length - 1; i >= 0; i--) {
-                const dr = drops[i];
-                dr.timer -= dt;
-                if (dr.timer > 0) {
-                    dr.x += dr.vx * dt;
-                    dr.y += dr.vy * dt;
-                    dr.vy += 240 * dt;
-                } else {
-                    const dx = hero.x - dr.x;
-                    const dy = (hero.y - 12) - dr.y;
-                    const dist = Math.hypot(dx, dy);
-                    if (dist < 14) {
-                        state.gold += dr.gold;
-                        gainExp(dr.exp);
-                        audio.playCoin();
-                        drops.splice(i, 1);
-                    } else {
-                        dr.x += (dx / dist) * 280 * dt;
-                        dr.y += (dy / dist) * 280 * dt;
-                    }
-                }
-            }
-
-            if (screenShake > 0) screenShake = Math.max(0, screenShake - 35 * dt);
-
-            uiSyncTimer += dt;
-            if (uiSyncTimer >= 0.12) { uiSyncTimer = 0; syncTopAndBattleUI(); }
-
-            autoSaveTimer += dt;
-            if (autoSaveTimer >= 5.0) { autoSaveTimer = 0; saveState(); }
-
-            if (state.autoCloudSync) {
-                autoCloudSyncTimer += dt;
-                if (autoCloudSyncTimer >= 45.0) {
-                    autoCloudSyncTimer = 0;
-                    pushSaveToGoogleSheets();
-                }
-            }
-        }
-
-        function gainExp(amount) {
-            const prevLevel = state.heroLevel;
-            state.exp += amount;
-            let req = getRequiredExp(state.heroLevel);
-            while (state.exp >= req) {
-                state.exp -= req;
-                state.heroLevel++;
-                state.maxHp = 100 + (state.heroLevel - 1) * 15;
-                state.hp = state.maxHp;
-                req = getRequiredExp(state.heroLevel);
-                spawnParticles(hero.x, hero.y - 15, '#34d399', 16, 80);
-            }
-            if (state.heroLevel > prevLevel && state.autoCloudSync) {
-                pushSaveToGoogleSheets();
-            }
-        }
-
-        function render() {
-            if (!isLoggedIn) {
-                ctx.fillStyle = '#09070d';
-                ctx.fillRect(0, 0, cw, ch);
-                return;
-            }
-            ctx.save();
-            if (screenShake > 0) {
-        function openLoginModal(prefillId = '', prefillName = '') {
-            isLoggedIn = false;
-            const idInput = document.getElementById('loginPlayerIdInput');
-            const nameInput = document.getElementById('loginPlayerNameInput');
-            idInput.value = prefillId ? sanitizePlayerId(prefillId) : generatePlayerId();
-            nameInput.value = prefillName || '';
-            renderKnownAccountsList();
-            document.getElementById('loginModal').classList.remove('hidden');
-        }
-
-        function renderKnownAccountsList() {
-            const listEl = document.getElementById('knownAccountsList');
-            const countEl = document.getElementById('knownAccountsCount');
-            const accounts = getKnownAccounts();
-            if (countEl) countEl.textContent = `${accounts.length} 個帳號`;
-
-            if (!accounts.length) {
-                listEl.innerHTML = `<div class="text-[11px] text-gray-500 text-center py-2">尚無歷史登入紀錄，請輸入新 ID 開始</div>`;
-                return;
-            }
-
-            listEl.innerHTML = accounts.map(acc => `
-                <button type="button" class="quick-login-btn w-full bg-[#1e1829] hover:bg-[#2b223b] border border-[#443859] rounded-lg px-2.5 py-2 flex items-center justify-between gap-2 text-left transition cursor-pointer"
-                        data-pid="${acc.playerId}" data-pname="${acc.playerName}">
-                    <div class="min-w-0">
-                        <div class="text-xs font-bold text-amber-300 truncate">${acc.playerName}</div>
-                        <div class="text-[10px] font-mono text-cyan-300 truncate">${acc.playerId}</div>
+                const card = document.createElement('div');
+                card.className = 'bg-[#201b2b] border border-[#3c334f] rounded-lg p-2 flex items-center justify-between gap-2';
+                card.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between text-xs font-bold text-gray-100">
+                            <span class="truncate">${q.title} <span class="text-[10px] text-purple-300">(第${prog.tier + 1}階段)</span></span>
+                            <span class="text-[10px] font-mono ${done ? 'text-emerald-300' : 'text-gray-400'}">${prog.count}/${target}</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-gray-900 rounded-full overflow-hidden my-1">
+                            <div class="h-full ${done ? 'bg-emerald-400' : 'bg-cyan-400'}" style="width:${pct}%"></div>
+                        </div>
+                        <div class="text-[10px] text-amber-300">獎勵：${q.rewardType === 'crystal' ? `💠 ${rewardAmt} 技能結晶` : `🪙 ${rewardAmt} 基礎金幣`}</div>
                     </div>
-                    <div class="text-right shrink-0">
-                        <div class="text-[10px] font-mono text-purple-300">B${acc.maxFloor || 1}F</div>
-                        <div class="text-[9px] text-gray-400">Lv.${acc.heroLevel || 1}</div>
-                    </div>
-                </button>
-            `).join('');
+                    <button type="button" data-qid="${q.id}" class="claim-quest-btn rpg-btn ${done ? 'rpg-btn-gold' : ''} px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0" ${done ? '' : 'disabled'}>
+                        ${done ? '領取' : '進行中'}
+                    </button>
+                `;
+                box.appendChild(card);
+            });
 
-            listEl.querySelectorAll('.quick-login-btn').forEach(btn => {
+            box.querySelectorAll('.claim-quest-btn').forEach(btn => {
+                btn.addEventListener('click', () => claimQuestReward(btn.dataset.qid));
+            });
+        }
+
+        function renderMineSubtab() {
+            const box = document.getElementById('subtab-mine');
+            if (!box) return;
+            const now = Date.now();
+            const mine = state.mine || { activeRoute: null, endTime: 0, readyToClaim: false };
+            const activeDef = MINE_ROUTES.find(r => r.id === mine.activeRoute);
+
+            if (activeDef && !mine.readyToClaim && now >= mine.endTime) {
+                mine.readyToClaim = true;
+                saveState();
+            }
+
+            const remainingSec = activeDef && !mine.readyToClaim ? Math.max(0, Math.ceil((mine.endTime - now) / 1000)) : 0;
+
+            box.innerHTML = `
+                <div class="bg-[#201b2b] border border-cyan-500/40 rounded-lg p-2.5 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-cyan-300">⛏️ 深淵礦坑自動開採</span>
+                        <span class="text-[10px] text-gray-400">可點擊揮鎬加速縮短時間</span>
+                    </div>
+                    ${activeDef ? `
+                        <div class="bg-[#15111d] border border-amber-500/40 rounded-lg p-2 flex items-center justify-between gap-2">
+                            <div>
+                                <div class="text-xs font-bold text-amber-300">${activeDef.name}</div>
+                                <div class="text-[10px] text-gray-300">${mine.readyToClaim ? '開採已完成，可領取礦產！' : `剩餘時間：${remainingSec} 秒`}</div>
+                            </div>
+                            ${mine.readyToClaim ? `
+                                <button id="claimMineBtn" type="button" class="rpg-btn rpg-btn-gold px-3 py-1.5 rounded-lg text-xs font-bold">領取礦產</button>
+                            ` : `
+                                <button id="boostMineBtn" type="button" class="rpg-btn rpg-btn-cyan px-2.5 py-1.5 rounded-lg text-[10px] font-bold">🔨 揮鎬 (-3秒)</button>
+                            `}
+                        </div>
+                    ` : `
+                        <div class="flex flex-col gap-1.5">
+                            ${MINE_ROUTES.map(r => `
+                                <div class="bg-[#15111d] border border-[#382f4a] rounded-lg p-2 flex items-center justify-between gap-2">
+                                    <div>
+                                        <div class="text-xs font-bold text-gray-100">${r.name}</div>
+                                        <div class="text-[10px] text-cyan-300">產出：💠 ${r.crystalReward} 結晶 + 🪙 ${formatNumber(Math.floor(120 * r.goldMult * state.floor))}</div>
+                                    </div>
+                                    <button type="button" data-route="${r.id}" class="start-mine-btn rpg-btn rpg-btn-gold px-2.5 py-1 rounded text-[10px] font-bold">派遣開採</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+            `;
+
+            box.querySelectorAll('.start-mine-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    loginWithAccount(btn.dataset.pid, btn.dataset.pname);
+                    const route = MINE_ROUTES.find(item => item.id === btn.dataset.route);
+                    if (!route) return;
+                    state.mine = {
+                        activeRoute: route.id,
+                        endTime: Date.now() + route.duration * 1000,
+                        readyToClaim: false
+                    };
+                    saveState();
+                    renderMineSubtab();
+                    showToast(`⛏️ 已派遣前往 ${route.name}`);
                 });
             });
+
+            const boostBtn = document.getElementById('boostMineBtn');
+            if (boostBtn) {
+                boostBtn.addEventListener('click', () => {
+                    if (!state.mine || state.mine.readyToClaim) return;
+                    state.mine.endTime -= 3000;
+                    audio.playHit(false);
+                    if (Date.now() >= state.mine.endTime) {
+                        state.mine.readyToClaim = true;
+                    }
+                    saveState();
+                    renderMineSubtab();
+                });
+            }
+
+            const claimBtn = document.getElementById('claimMineBtn');
+            if (claimBtn) {
+                claimBtn.addEventListener('click', () => {
+                    if (!activeDef) return;
+                    const goldGain = Math.floor(120 * activeDef.goldMult * state.floor * getStats().goldMult);
+                    state.crystals += activeDef.crystalReward;
+                    state.gold += goldGain;
+                    state.mine = { activeRoute: null, endTime: 0, readyToClaim: false };
+                    audio.playCoin();
+                    syncTopAndBattleUI();
+                    renderMineSubtab();
+                    pushSaveToGoogleSheets(true);
+                    showToast(`⛏️ 開採完成！獲得 💠 ${activeDef.crystalReward} 結晶與 🪙 ${formatNumber(goldGain)}`);
+                });
+            }
         }
 
-        async function loginWithAccount(rawId, rawName) {
-            const cleanId = sanitizePlayerId(rawId);
-            const enteredName = String(rawName || '').trim();
-            let loaded = loadAccountState(cleanId, enteredName);
+        function renderDefenseSubtab() {
+            const box = document.getElementById('subtab-defense');
+            if (!box) return;
+            const active = battle.mode === 'defense';
+            box.innerHTML = `
+                <div class="bg-[#201b2b] border border-purple-500/40 rounded-lg p-3 flex flex-col gap-2">
+                    <div class="text-xs font-bold text-purple-300">🛡️ 加班防禦戰 (30 秒怪物潮)</div>
+                    <p class="text-[11px] text-gray-300 leading-relaxed">
+                        在 30 秒內抵禦地下城湧出的大量怪物！成功撐過或擊退怪物可獲得豐厚金幣與技能結晶。
+                    </p>
+                    <button id="toggleDefenseBtn" type="button" class="rpg-btn ${active ? 'rpg-btn-red' : 'rpg-btn-gold'} w-full py-2 rounded-lg text-xs font-bold">
+                        ${active ? '⏹ 結束加班防禦戰' : '🛡️ 開始 30 秒加班防禦戰'}
+                    </button>
+                </div>
+            `;
+            const btn = document.getElementById('toggleDefenseBtn');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    if (battle.mode === 'defense') {
+                        endDefenseMode(false);
+                    } else {
+                        startDefenseMode();
+                    }
+                    renderDefenseSubtab();
+                });
+            }
+        }
 
-            const cloudData = await tryFetchCloudSave(cleanId);
-            if (cloudData) {
-                const localSaveTime = loaded.lastSaveTime || 0;
-                const cloudSaveTime = cloudData.lastSaveTime || 0;
-                if (cloudSaveTime >= localSaveTime) {
-                    loaded = normalizeLoadedState(cloudData, cleanId, enteredName || cloudData.playerName);
-                }
+        function renderBountySubtab() {
+            const box = document.getElementById('subtab-bounty');
+            if (!box) return;
+            const idx = (state.bounty && state.bounty.templateIdx) || 0;
+            const tpl = BOUNTY_TEMPLATES[idx % BOUNTY_TEMPLATES.length];
+            const isHunting = battle.mode === 'bounty';
+
+            box.innerHTML = `
+                <div class="bg-[#201b2b] border border-amber-500/40 rounded-lg p-3 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-300">🎯 菁英懸賞通緝令</span>
+                        <button id="cycleBountyBtn" type="button" class="rpg-btn px-2 py-0.5 rounded text-[10px] text-cyan-300">🔄 更換目標</button>
+                    </div>
+                    <div class="bg-[#15111d] border border-[#3a314c] rounded-lg p-2.5 flex items-center gap-2.5">
+                        <div class="text-2xl">${tpl.icon}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-xs font-bold text-amber-200">${tpl.prefix}${tpl.name}</div>
+                            <div class="text-[10px] text-gray-400">${tpl.desc}</div>
+                            <div class="text-[10px] text-emerald-300 mt-0.5">懸賞獎勵：💠 ${tpl.crystalReward} 結晶 + 高額金幣</div>
+                        </div>
+                    </div>
+                    <button id="startBountyBtn" type="button" class="rpg-btn ${isHunting ? 'rpg-btn-red' : 'rpg-btn-gold'} w-full py-2 rounded-lg text-xs font-bold" ${isHunting ? 'disabled' : ''}>
+                        ${isHunting ? '⚔️ 懸賞討伐進行中...' : '🎯 立即討伐懸賞目標'}
+                    </button>
+                </div>
+            `;
+
+            const cycleBtn = document.getElementById('cycleBountyBtn');
+            if (cycleBtn) {
+                cycleBtn.addEventListener('click', () => {
+                    state.bounty.templateIdx = (idx + 1) % BOUNTY_TEMPLATES.length;
+                    saveState();
+                    renderBountySubtab();
+                });
             }
 
-            if (enteredName) {
-                loaded.playerName = enteredName;
+            const startBtn = document.getElementById('startBountyBtn');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    if (battle.mode !== 'normal') {
+                        showToast('目前正在特殊戰鬥中，請先完成或結束');
+                        return;
+                    }
+                    startBountyMode(tpl);
+                    renderBountySubtab();
+                });
             }
+        }
 
-            state = loaded;
-            skillTimers = {};
-            selectedDollIndex = null;
-            boss = null;
-            defenseMode = null;
-            monsters = [];
-            for (let i = 0; i < 8; i++) spawnMonster();
+        function renderHeroRoster() {
+            const box = document.getElementById('heroRosterList');
+            if (!box) return;
+            box.innerHTML = '';
 
-            isLoggedIn = true;
-            recordKnownAccount(state);
-            saveState();
-            document.getElementById('loginModal').classList.add('hidden');
-            refreshAllUI();
-            checkOfflineEarnings();
-            showToast(`👋 歡迎打卡上班，${state.playerName} (${state.playerId})！`);
+            HERO_DATA.forEach(h => {
+                const unlocked = state.maxFloor >= h.unlockFloor || Boolean(state.codex && state.codex.unlocked && state.codex.unlocked[`heroes:${h.id}`]);
+                if (unlocked) unlockCodexEntry('heroes', h.id);
+                const active = state.activeHero === h.id;
 
-            if (state.autoCloudSync) {
-                pushSaveToGoogleSheets();
-            }
+                const card = document.createElement('div');
+                card.className = `bg-[#201b2b] border-2 ${active ? 'border-amber-400' : unlocked ? 'border-[#443959]' : 'border-gray-800 opacity-70'} rounded-lg p-2 flex flex-col items-center text-center gap-1`;
+                card.innerHTML = `
+                    <div class="text-2xl">${h.icon}</div>
+                    <div class="text-xs font-bold text-white truncate w-full">${h.name}</div>
+                    <div class="text-[9px] text-purple-300">${h.title}</div>
+                    <div class="text-[9px] text-emerald-300">${h.bonusText}</div>
+                    ${unlocked ? `
+                        <button type="button" data-hid="${h.id}" class="select-hero-btn rpg-btn ${active ? 'rpg-btn-gold' : ''} w-full py-1 rounded text-[10px] font-bold mt-1">
+                            ${active ? '出戰中' : '切換出戰'}
+                        </button>
+                    ` : `
+                        <div class="text-[9px] text-rose-400 font-bold mt-1">需達 B${h.unlockFloor}F</div>
+                    `}
+                `;
+                box.appendChild(card);
+            });
+
+            box.querySelectorAll('.select-hero-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.activeHero = btn.dataset.hid;
+                    unlockCodexEntry('heroes', state.activeHero);
+                    saveState();
+                    syncTopAndBattleUI();
+                    renderHeroRoster();
+                    renderUpgradeList();
+                    pushSaveToGoogleSheets(false);
+                    const def = HERO_DATA.find(item => item.id === state.activeHero);
+                    showToast(`🧙‍♂️ 已切換出戰英雄：${def ? def.name : state.activeHero}`);
+                });
+            });
         }
 
         function mergeOrSwapDolls(fromIdx, toIdx) {
+            if (fromIdx === toIdx) return;
             const fromTier = state.dolls[fromIdx];
             const toTier = state.dolls[toIdx];
-            selectedDollIndex = null;
-            let didMerge = false;
+            if (!fromTier) return;
 
-            if (fromTier !== null && fromTier === toTier) {
-                if (fromTier >= DOLL_TIERS.length) {
-                    showToast('✨ 已達到最高 T12 神話玩偶！');
-                } else {
-                    const nextTier = fromTier + 1;
-                    state.dolls[toIdx] = nextTier;
-                    state.dolls[fromIdx] = null;
-                    state.totalMerges++;
-                    didMerge = true;
-                    unlockCodexEntry('dolls', String(nextTier));
-                    addQuestProgress('q_merge', 1);
-                    const newDoll = DOLL_TIERS.find(d => d.tier === nextTier);
-                    audio.playMerge();
-                    showToast(`🎉 合成進化為【T${nextTier} ${newDoll.name}】！`);
-                }
+            if (toTier && fromTier === toTier && fromTier < DOLL_TIERS.length) {
+                const nextTier = fromTier + 1;
+                state.dolls[toIdx] = nextTier;
+                state.dolls[fromIdx] = null;
+                state.totalMerges = (state.totalMerges || 0) + 1;
+                unlockCodexEntry('dolls', nextTier);
+                addQuestProgress('q_merge', 1);
+                audio.playMerge();
+                const def = DOLL_TIERS.find(d => d.tier === nextTier);
+                showToast(`✨ 合成成功！進化為 T${nextTier} ${def ? def.name : ''}`);
             } else {
                 state.dolls[toIdx] = fromTier;
-                state.dolls[fromIdx] = toTier;
+                state.dolls[fromIdx] = toTier || null;
+                audio.playHit(false);
             }
 
+            selectedDollIndex = null;
+            saveState();
             renderDollGrid();
             syncTopAndBattleUI();
-            saveState();
-            if (didMerge && state.autoCloudSync) pushSaveToGoogleSheets();
+            pushSaveToGoogleSheets(false);
         }
 
-        function autoMergeAllDolls() {
-            let mergeCount = 0;
-            let keepChecking = true;
-            while (keepChecking) {
-                keepChecking = false;
+        function summonDoll(count = 1) {
+            let summoned = 0;
+            for (let c = 0; c < count; c++) {
+                const emptyIdx = state.dolls.findIndex(v => v === null || v === undefined);
+                if (emptyIdx === -1) {
+                    showToast('⚠️ 20 格玩偶盤面已滿，請先合成或整理空位');
+                    break;
+                }
+                const cost = getSummonDollCost();
+                if (state.gold < cost) {
+                    showToast('🪙 金幣不足，無法召喚玩偶');
+                    break;
+                }
+                state.gold -= cost;
+                state.dollSummonCount = (state.dollSummonCount || 0) + 1;
+                const tier = Math.random() < 0.18 && state.maxFloor >= 4 ? 2 : 1;
+                state.dolls[emptyIdx] = tier;
+                unlockCodexEntry('dolls', tier);
+                summoned++;
+            }
+
+            if (summoned > 0) {
+                audio.playCoin();
+                saveState();
+                renderDollGrid();
+                syncTopAndBattleUI();
+                pushSaveToGoogleSheets(false);
+            }
+        }
+
+        function autoMergeDolls() {
+            let mergedCount = 0;
+            let changed = true;
+            while (changed) {
+                changed = false;
                 for (let i = 0; i < state.dolls.length; i++) {
                     const t1 = state.dolls[i];
                     if (!t1 || t1 >= DOLL_TIERS.length) continue;
@@ -1951,689 +1554,1645 @@
                             const nextTier = t1 + 1;
                             state.dolls[i] = nextTier;
                             state.dolls[j] = null;
-                            unlockCodexEntry('dolls', String(nextTier));
-                            mergeCount++;
-                            keepChecking = true;
+                            state.totalMerges = (state.totalMerges || 0) + 1;
+                            unlockCodexEntry('dolls', nextTier);
+                            addQuestProgress('q_merge', 1);
+                            mergedCount++;
+                            changed = true;
                             break;
                         }
                     }
-                    if (keepChecking) break;
+                    if (changed) break;
                 }
             }
 
-            if (mergeCount > 0) {
-                state.totalMerges += mergeCount;
-                addQuestProgress('q_merge', mergeCount);
+            if (mergedCount > 0) {
+                selectedDollIndex = null;
                 audio.playMerge();
-                showToast(`✨ 自動完成 ${mergeCount} 次玩偶合成！`);
+                saveState();
                 renderDollGrid();
                 syncTopAndBattleUI();
-                saveState();
-                if (state.autoCloudSync) pushSaveToGoogleSheets();
+                pushSaveToGoogleSheets(false);
+                showToast(`✨ 一鍵合成完成！共進化 ${mergedCount} 次`);
             } else {
-                showToast('目前沒有可合成的相同玩偶');
+                showToast('目前沒有可合成的相同階級玩偶');
             }
         }
 
-        function summonDolls(count = 1) {
-            let summoned = 0;
-            for (let c = 0; c < count; c++) {
-                const emptyIdx = state.dolls.findIndex(d => d === null);
-                if (emptyIdx === -1) break;
-                const cost = getSummonDollCost();
-                if (state.gold < cost) break;
-                state.gold -= cost;
-                state.dollSummonCount++;
-                state.dolls[emptyIdx] = 1;
-                unlockCodexEntry('dolls', '1');
-                summoned++;
-            }
-            if (summoned > 0) {
-                audio.playCoin();
-                renderDollGrid();
-                syncTopAndBattleUI();
-                saveState();
-            } else {
-                showToast('⚠️ 盤面已滿或金幣不足！');
-            }
+        function renderDollGrid() {
+            const grid = document.getElementById('dollGrid');
+            const bonusEl = document.getElementById('dollTabBonus');
+            const costEl = document.getElementById('summonDollCost');
+            if (!grid) return;
+
+            if (bonusEl) bonusEl.textContent = `+${Math.round(getDollTotalBonus() * 100)}%`;
+            if (costEl) costEl.textContent = `🪙${formatNumber(getSummonDollCost())}`;
+
+            grid.innerHTML = '';
+            state.dolls.forEach((tier, idx) => {
+                const slot = document.createElement('div');
+                const isSelected = selectedDollIndex === idx;
+                slot.className = `doll-slot flex flex-col items-center justify-center ${tier ? 'has-doll' : ''} ${isSelected ? 'selected' : ''}`;
+                slot.draggable = Boolean(tier);
+
+                if (tier) {
+                    const def = DOLL_TIERS.find(d => d.tier === tier) || DOLL_TIERS[0];
+                    slot.innerHTML = `
+                        <span class="text-base leading-none">${def.icon}</span>
+                        <span class="text-[8px] font-mono font-bold text-amber-300 mt-0.5">T${tier}</span>
+                    `;
+                }
+
+                slot.addEventListener('dragstart', e => {
+                    if (!tier) return;
+                    selectedDollIndex = idx;
+                    if (e.dataTransfer) e.dataTransfer.setData('text/plain', String(idx));
+                });
+
+                slot.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    slot.classList.add('drag-over');
+                });
+
+                slot.addEventListener('dragleave', () => {
+                    slot.classList.remove('drag-over');
+                });
+
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    const fromIdx = e.dataTransfer && e.dataTransfer.getData('text/plain') !== ''
+                        ? Number(e.dataTransfer.getData('text/plain'))
+                        : selectedDollIndex;
+                    if (typeof fromIdx === 'number' && !Number.isNaN(fromIdx)) {
+                        mergeOrSwapDolls(fromIdx, idx);
+                    }
+                });
+
+                slot.addEventListener('click', () => {
+                    if (selectedDollIndex === null) {
+                        if (tier) {
+                            selectedDollIndex = idx;
+                            renderDollGrid();
+                        }
+                    } else if (selectedDollIndex === idx) {
+                        selectedDollIndex = null;
+                        renderDollGrid();
+                    } else {
+                        mergeOrSwapDolls(selectedDollIndex, idx);
+                    }
+                });
+
+                grid.appendChild(slot);
+            });
         }
 
-        function renderCodexPage() {
+        function renderUpgradeList() {
+            const list = document.getElementById('upgradeList');
+            const summaryEl = document.getElementById('codexBonusSummary');
+            if (!list) return;
+
             const cStats = getCodexStats();
-            document.getElementById('codexProgressText').textContent = `${cStats.unlockedCount}/${cStats.total}`;
-            document.getElementById('codexAtkBonus').textContent = `+${Math.round(cStats.atkBonus * 100)}%`;
-            document.getElementById('codexGoldBonus').textContent = `+${Math.round(cStats.goldBonus * 100)}%`;
+            if (summaryEl) summaryEl.textContent = `+${Math.round(cStats.atkBonus * 100)}%`;
 
-            const allEntries = getAllCodexEntries();
-            const items = allEntries[activeCodexCat] || [];
-            const grid = document.getElementById('codexGrid');
+            const defs = [
+                { key: 'atk', icon: '⚔️', name: '輪班攻擊力', desc: '提升普通攻擊與技能基礎傷害' },
+                { key: 'spd', icon: '⚡', name: '攻速節奏', desc: '縮短普攻間隔，加快清怪節奏' },
+                { key: 'critRate', icon: '🎯', name: '暴擊機率', desc: '提高打出高額暴擊傷害的機率' },
+                { key: 'critDmg', icon: '💥', name: '暴擊倍率', desc: '放大暴擊時跳出的傷害數字' },
+                { key: 'goldGain', icon: '🪙', name: '加班金幣收益', desc: '增加擊殺怪物與首領獲得的金幣' }
+            ];
 
-            grid.innerHTML = items.map(item => {
-                const key = `${activeCodexCat}:${item.id}`;
-                const unlocked = !!state.codex.unlocked[key];
-                const claimed = !!state.codex.claimed[key];
+            list.innerHTML = '';
+            defs.forEach(item => {
+                const lvl = state.upgrades[item.key] || 1;
+                const cost = getMultiUpgradeCost(item.key, lvl, buyMultiplier);
+                const canAfford = state.gold >= cost;
 
-                return `
-                    <div class="bg-[#211c2b] border ${unlocked && !claimed ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col justify-between gap-1.5 ${!unlocked ? 'opacity-45' : ''}">
-                        <div class="flex items-start gap-2">
-                            <div class="w-8 h-8 rounded bg-[#14111c] border border-gray-700 flex items-center justify-center text-lg shrink-0">
-                                ${unlocked ? item.icon : '❓'}
-                            </div>
-                            <div class="min-w-0">
-                                <div class="text-[11px] font-bold ${unlocked ? 'text-gray-100' : 'text-gray-500'} truncate">
-                                    ${unlocked ? item.name : '未解鎖條目'}
-                                </div>
-                                <div class="text-[9px] text-gray-400 leading-tight mt-0.5">
-                                    ${unlocked ? item.desc : '繼續冒險以點亮此圖鑑'}
-                                </div>
-                            </div>
+                const row = document.createElement('div');
+                row.className = 'bg-[#201b2b] border border-[#3b324d] rounded-lg p-2 flex items-center justify-between gap-2';
+                row.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-white flex items-center gap-1">
+                            <span>${item.icon}</span>
+                            <span>${item.name}</span>
+                            <span class="text-[10px] text-amber-300 font-mono">Lv.${lvl}</span>
                         </div>
+                        <div class="text-[10px] text-gray-400 truncate">${item.desc}</div>
+                    </div>
+                    <button type="button" data-ukey="${item.key}" class="upgrade-stat-btn rpg-btn ${canAfford ? 'rpg-btn-gold' : ''} px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0 flex flex-col items-center" ${canAfford ? '' : 'disabled'}>
+                        <span>+${buyMultiplier} 級</span>
+                        <span class="text-[9px] font-mono">🪙 ${formatNumber(cost)}</span>
+                    </button>
+                `;
+                list.appendChild(row);
+            });
 
-                        ${unlocked ? (
-                            claimed
-                                ? `<div class="text-[9px] text-center py-1 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-800/40">✔ 已收錄圖鑑</div>`
-                                : `<button class="claim-codex-btn rpg-btn rpg-btn-gold w-full py-1 rounded text-[10px] font-bold" data-key="${key}" data-reward="${item.rewardCrystal}">
-                                    🎁 領取首通 💠+${item.rewardCrystal}
-                                   </button>`
-                        ) : `<div class="text-[9px] text-center py-1 rounded bg-black/40 text-gray-600">尚未發現</div>`}
+            list.querySelectorAll('.upgrade-stat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.ukey;
+                    const lvl = state.upgrades[key] || 1;
+                    const cost = getMultiUpgradeCost(key, lvl, buyMultiplier);
+                    if (state.gold < cost) return;
+                    state.gold -= cost;
+                    state.upgrades[key] = lvl + buyMultiplier;
+                    state.totalUpgrades = (state.totalUpgrades || 0) + buyMultiplier;
+                    audio.playCoin();
+                    saveState();
+                    renderUpgradeList();
+                    syncTopAndBattleUI();
+                    pushSaveToGoogleSheets(false);
+                });
+            });
+        }
+
+        function forgeWeapon(useCrystal = false) {
+            if (useCrystal) {
+                if (state.crystals < 15) {
+                    showToast('💠 技能結晶不足 15 顆');
+                    return;
+                }
+                state.crystals -= 15;
+            } else {
+                const cost = getForgeGoldCost();
+                if (state.gold < cost) {
+                    showToast('🪙 金幣不足，無法鍛造武器');
+                    return;
+                }
+                state.gold -= cost;
+                state.weaponForgeCount = (state.weaponForgeCount || 0) + 1;
+            }
+
+            const totalWeight = WEAPON_CATALOG.reduce((acc, w) => acc + (useCrystal ? Math.pow(w.weight, 0.65) : w.weight), 0);
+            let roll = Math.random() * totalWeight;
+            let chosen = WEAPON_CATALOG[0];
+            for (const w of WEAPON_CATALOG) {
+                const wt = useCrystal ? Math.pow(w.weight, 0.65) : w.weight;
+                roll -= wt;
+                if (roll <= 0) {
+                    chosen = w;
+                    break;
+                }
+            }
+
+            if (!state.ownedWeapons[chosen.id]) {
+                state.ownedWeapons[chosen.id] = { level: 1, stars: 1, shards: 0 };
+                state.equippedWeapon = chosen.id;
+            } else {
+                const own = state.ownedWeapons[chosen.id];
+                own.level += 1;
+                own.shards = (own.shards || 0) + 1;
+                if (own.shards >= 3 && own.stars < 5) {
+                    own.shards -= 3;
+                    own.stars += 1;
+                }
+            }
+
+            unlockCodexEntry('weapons', chosen.id);
+            audio.playForge();
+            saveState();
+            renderWeaponList();
+            syncTopAndBattleUI();
+            pushSaveToGoogleSheets(true);
+            showToast(`🔨 鍛造獲得【${chosen.name}】！`);
+        }
+
+        function renderWeaponList() {
+            const list = document.getElementById('weaponList');
+            const goldCostEl = document.getElementById('forgeGoldCost');
+            if (!list) return;
+
+            if (goldCostEl) goldCostEl.textContent = `${formatNumber(getForgeGoldCost())} 金幣`;
+
+            list.innerHTML = '';
+            WEAPON_CATALOG.forEach(w => {
+                const own = state.ownedWeapons[w.id];
+                const isEquipped = state.equippedWeapon === w.id;
+                const starsText = own ? '★'.repeat(own.stars || 1) : '未取得';
+
+                const card = document.createElement('div');
+                card.className = `bg-[#201b2b] border-2 ${isEquipped ? 'border-amber-400' : own ? 'border-[#443959]' : 'border-gray-800 opacity-65'} rounded-lg p-2 flex flex-col justify-between gap-1.5`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-xs font-bold text-white truncate">${w.icon} ${w.name}</span>
+                            <span class="text-[9px] font-mono text-amber-300 shrink-0">${starsText}</span>
+                        </div>
+                        <div class="text-[9px] text-gray-400 mt-0.5">${w.rarityName} | 攻擊 +${Math.round(w.baseAtkPct * 100)}%</div>
+                        ${own ? `<div class="text-[9px] text-cyan-300 font-mono">Lv.${own.level} (碎片 ${own.shards || 0}/3)</div>` : `<div class="text-[9px] text-gray-500">尚未鍛造取得</div>`}
+                    </div>
+                    ${own ? `
+                        <button type="button" data-wid="${w.id}" class="equip-weapon-btn rpg-btn ${isEquipped ? 'rpg-btn-gold' : ''} w-full py-1 rounded text-[10px] font-bold">
+                            ${isEquipped ? '裝備中' : '裝備武器'}
+                        </button>
+                    ` : ''}
+                `;
+                list.appendChild(card);
+            });
+
+            list.querySelectorAll('.equip-weapon-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.equippedWeapon = btn.dataset.wid;
+                    unlockCodexEntry('weapons', state.equippedWeapon);
+                    audio.playHit(true);
+                    saveState();
+                    renderWeaponList();
+                    syncTopAndBattleUI();
+                    pushSaveToGoogleSheets(false);
+                });
+            });
+        }
+
+        function renderEquippedSkillBar() {
+            const bar = document.getElementById('equippedSkillBar');
+            const preview = document.getElementById('equippedSlotsPreview');
+            const currentHeroDef = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+
+            if (bar) {
+                bar.innerHTML = '';
+                state.equippedSkills.forEach((sid, slotIdx) => {
+                    const def = sid ? SKILL_CATALOG.find(s => s.id === sid) : null;
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    if (!def) {
+                        btn.className = 'w-9 h-9 rounded-lg bg-gray-900/80 border border-dashed border-gray-600 text-gray-500 text-xs font-bold flex items-center justify-center';
+                        btn.textContent = '+';
+                        btn.addEventListener('click', () => switchTab('skills'));
+                    } else {
+                        const rem = Math.max(0, skillTimers[def.id] || 0);
+                        const ready = rem <= 0 && state.mp >= def.mpCost;
+                        btn.className = `relative w-9 h-9 rounded-lg bg-[#241e33] border ${ready ? 'skill-ready' : 'border-purple-400/50'} flex flex-col items-center justify-center overflow-hidden cursor-pointer`;
+                        btn.innerHTML = `
+                            <span class="text-sm leading-none">${def.icon}</span>
+                            ${rem > 0 ? `<span class="absolute inset-0 bg-black/75 text-[9px] font-mono font-bold text-amber-300 flex items-center justify-center">${rem.toFixed(1)}s</span>` : ''}
+                        `;
+                        btn.title = `${def.name} (MP ${def.mpCost})`;
+                        btn.addEventListener('click', () => castSkill(def.id));
+                    }
+                    bar.appendChild(btn);
+                });
+            }
+
+            if (preview) {
+                preview.innerHTML = '';
+                state.equippedSkills.forEach((sid, idx) => {
+                    const def = sid ? SKILL_CATALOG.find(s => s.id === sid) : null;
+                    const slot = document.createElement('div');
+                    slot.className = 'bg-[#15111d] border border-[#3d3352] rounded-lg p-1.5 flex flex-col items-center text-center gap-0.5';
+                    slot.innerHTML = def
+                        ? `<span class="text-base leading-none">${def.icon}</span><span class="text-[9px] font-bold text-white truncate w-full">${def.name}</span><span class="text-[8px] text-cyan-300">槽位 ${idx + 1}</span>`
+                        : `<span class="text-xs text-gray-500 py-1">空槽位 ${idx + 1}</span>`;
+                    preview.appendChild(slot);
+                });
+            }
+
+            const heroIconEl = document.getElementById('headerHeroIcon');
+            if (heroIconEl) heroIconEl.textContent = currentHeroDef.icon;
+        }
+
+        function renderSkillCodex() {
+            const list = document.getElementById('skillCodexList');
+            if (!list) return;
+            list.innerHTML = '';
+
+            SKILL_CATALOG.forEach(s => {
+                const lvl = state.unlockedSkills[s.id] || 0;
+                const unlocked = lvl > 0;
+                const equippedIdx = state.equippedSkills.indexOf(s.id);
+                const upgradeCost1 = getSkillUpgradeCost(lvl, 1);
+                const upgradeCost10 = getSkillUpgradeCost(lvl, 10);
+
+                const row = document.createElement('div');
+                row.className = 'bg-[#201b2b] border border-[#3c334f] rounded-lg p-2 flex items-center justify-between gap-2';
+                row.innerHTML = `
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">${s.icon}</span>
+                            <span class="text-xs font-bold ${s.color}">${s.name}</span>
+                            ${unlocked ? `<span class="text-[10px] font-mono text-amber-300">Lv.${lvl}</span>` : `<span class="text-[9px] text-cyan-300">需 💠 ${s.unlockCrystal} 解鎖</span>`}
+                        </div>
+                        <div class="text-[10px] text-gray-400 truncate mt-0.5">${s.desc}</div>
+                    </div>
+                    <div class="flex gap-1 shrink-0">
+                        ${unlocked ? `
+                            <button type="button" data-sid="${s.id}" data-step="1" class="lvl-skill-btn rpg-btn px-1.5 py-1 rounded text-[9px] font-bold text-amber-300" ${state.gold < upgradeCost1 ? 'disabled' : ''}>
+                                +1 🪙${formatNumber(upgradeCost1)}
+                            </button>
+                            <button type="button" data-sid="${s.id}" data-step="10" class="lvl-skill-btn rpg-btn rpg-btn-gold px-1.5 py-1 rounded text-[9px] font-bold" ${state.gold < upgradeCost10 ? 'disabled' : ''}>
+                                +10 🪙${formatNumber(upgradeCost10)}
+                            </button>
+                            <button type="button" data-sid="${s.id}" class="equip-skill-btn rpg-btn ${equippedIdx !== -1 ? 'rpg-btn-gold' : ''} px-2 py-1 rounded text-[10px] font-bold">
+                                ${equippedIdx !== -1 ? `槽${equippedIdx + 1}` : '裝備'}
+                            </button>
+                        ` : `
+                            <button type="button" data-sid="${s.id}" class="unlock-skill-btn rpg-btn rpg-btn-cyan px-2.5 py-1 rounded text-[10px] font-bold" ${state.crystals < s.unlockCrystal ? 'disabled' : ''}>
+                                解鎖 💠${s.unlockCrystal}
+                            </button>
+                        `}
                     </div>
                 `;
-            }).join('');
+                list.appendChild(row);
+            });
+
+            list.querySelectorAll('.unlock-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const def = SKILL_CATALOG.find(item => item.id === btn.dataset.sid);
+                    if (!def || state.crystals < def.unlockCrystal) return;
+                    state.crystals -= def.unlockCrystal;
+                    state.unlockedSkills[def.id] = 1;
+                    unlockCodexEntry('skills', def.id);
+                    const emptySlot = state.equippedSkills.findIndex(x => !x);
+                    if (emptySlot !== -1) state.equippedSkills[emptySlot] = def.id;
+                    audio.playMerge();
+                    saveState();
+                    renderSkillCodex();
+                    renderEquippedSkillBar();
+                    syncTopAndBattleUI();
+                    pushSaveToGoogleSheets(false);
+                    showToast(`⚡ 已解鎖技能：${def.name}`);
+                });
+            });
+
+            list.querySelectorAll('.lvl-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const def = SKILL_CATALOG.find(item => item.id === btn.dataset.sid);
+                    if (!def) return;
+                    const step = Number(btn.dataset.step || 1);
+                    const lvl = state.unlockedSkills[def.id] || 1;
+                    const cost = getSkillUpgradeCost(lvl, step);
+                    if (state.gold < cost) return;
+                    state.gold -= cost;
+                    state.unlockedSkills[def.id] = lvl + step;
+                    audio.playCoin();
+                    saveState();
+                    renderSkillCodex();
+                    syncTopAndBattleUI();
+                    pushSaveToGoogleSheets(false);
+                    if (step >= 10) {
+                        showToast(`⚡ ${def.name} 提升至 Lv.${state.unlockedSkills[def.id]}！`);
+                    }
+                });
+            });
+
+            list.querySelectorAll('.equip-skill-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const sid = btn.dataset.sid;
+                    const existingIdx = state.equippedSkills.indexOf(sid);
+                    if (existingIdx !== -1) {
+                        state.equippedSkills[existingIdx] = null;
+                    } else {
+                        const targetIdx = state.equippedSkills.findIndex(x => !x);
+                        state.equippedSkills[targetIdx !== -1 ? targetIdx : 0] = sid;
+                    }
+                    audio.playHit(false);
+                    saveState();
+                    renderSkillCodex();
+                    renderEquippedSkillBar();
+                    pushSaveToGoogleSheets(false);
+                });
+            });
+        }
+
+        function renderCodexPanel() {
+            const grid = document.getElementById('codexGrid');
+            const stats = getCodexStats();
+            const progressEl = document.getElementById('codexProgressText');
+            const atkBonusEl = document.getElementById('codexAtkBonus');
+            const goldBonusEl = document.getElementById('codexGoldBonus');
+
+            if (progressEl) progressEl.textContent = `${stats.unlockedCount}/${stats.total}`;
+            if (atkBonusEl) atkBonusEl.textContent = `+${Math.round(stats.atkBonus * 100)}%`;
+            if (goldBonusEl) goldBonusEl.textContent = `+${Math.round(stats.goldBonus * 100)}%`;
+            updateCodexRedDot();
+
+            if (!grid) return;
+            const entries = getAllCodexEntries()[activeCodexCat] || [];
+            grid.innerHTML = '';
+
+            entries.forEach(item => {
+                const key = `${activeCodexCat}:${item.id}`;
+                const unlocked = Boolean(state.codex && state.codex.unlocked && state.codex.unlocked[key]);
+                const claimed = Boolean(state.codex && state.codex.claimed && state.codex.claimed[key]);
+
+                const card = document.createElement('div');
+                card.className = `bg-[#201b2b] border ${unlocked ? (claimed ? 'border-emerald-500/40' : 'border-amber-400') : 'border-gray-800 opacity-60'} rounded-lg p-2 flex flex-col justify-between gap-1`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-lg">${unlocked ? item.icon : '❓'}</span>
+                        <div class="min-w-0">
+                            <div class="text-[11px] font-bold ${unlocked ? 'text-white' : 'text-gray-500'} truncate">${unlocked ? item.name : '未解鎖條目'}</div>
+                            <div class="text-[9px] text-gray-400 truncate">${unlocked ? item.desc : '探索地下城或合成鍛造以解鎖'}</div>
+                        </div>
+                    </div>
+                    ${unlocked && !claimed ? `
+                        <button type="button" data-ckey="${key}" data-reward="${item.rewardCrystal}" class="claim-codex-btn rpg-btn rpg-btn-gold w-full py-1 rounded text-[10px] font-bold mt-1">
+                            領取 +💠${item.rewardCrystal}
+                        </button>
+                    ` : `
+                        <div class="text-[9px] text-right ${claimed ? 'text-emerald-400' : 'text-gray-500'}">${claimed ? '✓ 已領取共鳴' : '尚未發現'}</div>
+                    `}
+                `;
+                grid.appendChild(card);
+            });
 
             grid.querySelectorAll('.claim-codex-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const key = btn.dataset.key;
-                    const reward = Number(btn.dataset.reward);
-                    if (!state.codex.claimed[key]) {
-                        state.codex.claimed[key] = true;
-                        state.crystals += reward;
-                        audio.playLevelUp();
-                        showToast(`📖 圖鑑收錄獎勵！獲得技能結晶 💠+${reward}`);
-                        updateCodexRedDot();
-                        renderCodexPage();
-                        syncTopAndBattleUI();
-                        saveState();
-                    }
-                });
-            });
-        }
-
-        function updateQuestTrackerUI() {
-            let chosenDef = QUEST_DEFS[0];
-            let hasClaimable = false;
-
-            for (const q of QUEST_DEFS) {
-                const prog = state.questProgress[q.id];
-                const target = q.baseTarget + prog.tier * q.step;
-                if (prog.count >= target) { chosenDef = q; hasClaimable = true; break; }
-            }
-            if (state.mine.readyToClaim || state.bounty.completed) hasClaimable = true;
-
-            const redDot = document.getElementById('questRedDot');
-            if (redDot) {
-                if (hasClaimable) redDot.classList.remove('hidden');
-                else redDot.classList.add('hidden');
-            }
-
-            const prog = state.questProgress[chosenDef.id];
-            const target = chosenDef.baseTarget + prog.tier * chosenDef.step;
-            const pct = Math.min(100, (prog.count / target) * 100);
-
-            const trackerBtn = document.getElementById('questTrackerBtn');
-            const titleEl = document.getElementById('trackerTitle');
-            const barEl = document.getElementById('trackerBar');
-            const statusEl = document.getElementById('trackerStatus');
-
-            if (prog.count >= target) {
-                trackerBtn.classList.add('border-amber-400', 'bg-amber-950/60');
-                titleEl.textContent = `🎁 點擊領獎：${chosenDef.title}`;
-                statusEl.textContent = '領取!';
-                statusEl.className = 'text-[9px] font-bold text-amber-300 shrink-0 animate-bounce';
-            } else {
-                trackerBtn.classList.remove('border-amber-400', 'bg-amber-950/60');
-                titleEl.textContent = `📋 ${chosenDef.title}`;
-                statusEl.textContent = `${prog.count}/${target}`;
-                statusEl.className = 'text-[9px] font-mono font-bold text-gray-300 shrink-0';
-            }
-            barEl.style.width = `${pct}%`;
-        }
-
-        function claimDailyQuest(questId) {
-            const q = QUEST_DEFS.find(item => item.id === questId);
-            const prog = state.questProgress[questId];
-            const target = q.baseTarget + prog.tier * q.step;
-            if (prog.count < target) return;
-
-            prog.count -= target;
-            prog.tier++;
-
-            if (q.rewardType === 'crystal') {
-                const reward = q.baseReward + (prog.tier - 1) * 3;
-                state.crystals += reward;
-                showToast(`💠 完成輪班委託！獲得技能結晶 +${reward}`);
-            } else {
-                const stats = getStats();
-                const reward = Math.floor(q.baseReward * Math.pow(1.3, state.floor - 1) * stats.goldMult);
-                state.gold += reward;
-                showToast(`🪙 完成輪班委託！獲得金幣 +${formatNumber(reward)}`);
-            }
-
-            audio.playLevelUp();
-            updateQuestTrackerUI();
-            renderSubtabContent('daily');
-            syncTopAndBattleUI();
-            saveState();
-        }
-
-        function renderSubtabContent(subtabName) {
-            if (subtabName === 'daily') {
-                const container = document.getElementById('subtab-daily');
-                container.innerHTML = QUEST_DEFS.map(q => {
-                    const prog = state.questProgress[q.id];
-                    const target = q.baseTarget + prog.tier * q.step;
-                    const isDone = prog.count >= target;
-                    const pct = Math.min(100, (prog.count / target) * 100);
-                    const stats = getStats();
-                    const rewardStr = q.rewardType === 'crystal'
-                        ? `💠 ${q.baseReward + prog.tier * 3}`
-                        : `🪙 ${formatNumber(Math.floor(q.baseReward * Math.pow(1.3, state.floor - 1) * stats.goldMult))}`;
-
-                    return `
-                        <div class="bg-[#211c2b] border ${isDone ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex items-center justify-between gap-2">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center justify-between text-xs font-bold mb-1">
-                                    <span class="text-gray-100 truncate">${q.title}</span>
-                                    <span class="text-[10px] font-mono text-cyan-300">${prog.count}/${target}</span>
-                                </div>
-                                <div class="w-full h-2 bg-gray-900 rounded-full overflow-hidden">
-                                    <div class="h-full ${isDone ? 'bg-amber-400' : 'bg-cyan-500'}" style="width: ${pct}%"></div>
-                                </div>
-                            </div>
-                            <button class="claim-quest-btn rpg-btn ${isDone ? 'rpg-btn-gold' : ''} px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0"
-                                    data-qid="${q.id}" ${!isDone ? 'disabled' : ''}>
-                                ${isDone ? `領取 ${rewardStr}` : rewardStr}
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-
-                container.querySelectorAll('.claim-quest-btn').forEach(btn => {
-                    btn.addEventListener('click', () => claimDailyQuest(btn.dataset.qid));
-                });
-
-            } else if (subtabName === 'mine') {
-                const container = document.getElementById('subtab-mine');
-                if (state.mine.activeRoute) {
-                    const route = MINE_ROUTES.find(r => r.id === state.mine.activeRoute) || MINE_ROUTES[0];
-                    const remSec = Math.max(0, Math.ceil((state.mine.endTime - Date.now()) / 1000));
-                    const isReady = state.mine.readyToClaim || remSec <= 0;
-
-                    container.innerHTML = `
-                        <div class="bg-[#211c2b] border border-cyan-500/50 rounded-lg p-3 flex flex-col items-center text-center gap-2">
-                            <div class="text-2xl">⛏️</div>
-                            <div class="text-xs font-bold text-cyan-300">正在開採：${route.name}</div>
-                            <div class="text-xs text-gray-300">
-                                ${isReady ? '<span class="text-emerald-400 font-bold">✅ 礦脈已開採完畢！</span>' : `剩餘時間：<b id="activeMineCountdown" class="text-amber-300 font-mono">${remSec} 秒</b>`}
-                            </div>
-                            <div class="flex gap-2 w-full mt-1">
-                                ${isReady ? `
-                                    <button id="claimMineBtn" class="rpg-btn rpg-btn-gold w-full py-2 rounded-lg text-xs font-bold">
-                                        領取 💠 ${route.crystalReward} 結晶與金幣！
-                                    </button>
-                                ` : `
-                                    <button id="boostMineBtn" class="rpg-btn w-full py-2 rounded-lg text-xs font-bold text-cyan-300 border-cyan-500/60">
-                                        ⚡ 手動揮鎬加速 (-5秒)
-                                    </button>
-                                `}
-                            </div>
-                        </div>
-                    `;
-
-                    if (isReady) {
-                        document.getElementById('claimMineBtn').onclick = () => {
-                            const stats = getStats();
-                            const goldBonus = Math.floor(60 * route.goldMult * Math.pow(1.3, state.floor - 1) * stats.goldMult);
-                            state.crystals += route.crystalReward;
-                            state.gold += goldBonus;
-                            state.mine = { activeRoute: null, endTime: 0, readyToClaim: false };
-                            audio.playLevelUp();
-                            showToast(`⛏️ 礦坑收成！獲得 💠${route.crystalReward} 與 🪙${formatNumber(goldBonus)}`);
-                            renderSubtabContent('mine');
-                            updateQuestTrackerUI();
-                            syncTopAndBattleUI();
-                            saveState();
-                        };
-                    } else {
-                        document.getElementById('boostMineBtn').onclick = () => {
-                            state.mine.endTime -= 5000;
-                            audio.playHit(true);
-                            if (Date.now() >= state.mine.endTime) state.mine.readyToClaim = true;
-                            renderSubtabContent('mine');
-                        };
-                    }
-                } else {
-                    container.innerHTML = MINE_ROUTES.map(r => `
-                        <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-2 flex items-center justify-between">
-                            <div>
-                                <div class="text-xs font-bold text-gray-100">${r.name}</div>
-                                <div class="text-[10px] text-cyan-300">產出：💠 ${r.crystalReward} 技能結晶 + 豐厚金幣</div>
-                            </div>
-                            <button class="start-mine-btn rpg-btn rpg-btn-gold px-2.5 py-1.5 rounded-lg text-[10px] font-bold" data-rid="${r.id}">派遣開採</button>
-                        </div>
-                    `).join('');
-
-                    container.querySelectorAll('.start-mine-btn').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const route = MINE_ROUTES.find(r => r.id === btn.dataset.rid);
-                            state.mine = { activeRoute: route.id, endTime: Date.now() + route.duration * 1000, readyToClaim: false };
-                            audio.playCoin();
-                            renderSubtabContent('mine');
-                            saveState();
-                        });
-                    });
-                }
-
-            } else if (subtabName === 'defense') {
-                const container = document.getElementById('subtab-defense');
-                const targetKills = 30 + state.floor * 3;
-                container.innerHTML = `
-                    <div class="bg-[#211c2b] border border-purple-500/50 rounded-lg p-3 flex flex-col gap-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-purple-300">🛡️ 無盡怪物潮「加班防禦戰」</span>
-                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">限時 30 秒</span>
-                        </div>
-                        <p class="text-[11px] text-gray-300 leading-relaxed">
-                            開啟後怪物刷新暴增！在 30 秒內擊殺 <b class="text-amber-300">${targetKills} 隻</b> 怪物，即可額外獲得海量金幣、結晶與 <b class="text-pink-300">2 階玩偶寶箱</b>！
-                        </p>
-                        <button id="launchDefenseBtn" class="rpg-btn rpg-btn-red w-full py-2 rounded-lg text-xs font-bold mt-1" ${boss || defenseMode ? 'disabled' : ''}>
-                            ${defenseMode ? '防禦戰進行中...' : '🔥 立即開啟加班防禦戰'}
-                        </button>
-                    </div>
-                `;
-                const btn = document.getElementById('launchDefenseBtn');
-                if (btn) btn.onclick = startDefenseMode;
-
-            } else if (subtabName === 'bounty') {
-                const container = document.getElementById('subtab-bounty');
-                const tpl = BOUNTY_TEMPLATES[state.bounty.templateIdx % BOUNTY_TEMPLATES.length];
-
-                if (state.bounty.completed) {
-                    container.innerHTML = `
-                        <div class="bg-[#211c2b] border border-amber-400 rounded-lg p-3 flex flex-col items-center text-center gap-2">
-                            <div class="text-2xl">🏆</div>
-                            <div class="text-xs font-bold text-amber-300">懸賞通緝已完成！</div>
-                            <div class="text-[11px] text-gray-300">目標【${tpl.name}】已被成功討伐。</div>
-                            <button id="claimBountyBtn" class="rpg-btn rpg-btn-gold w-full py-2 rounded-lg text-xs font-bold">領取懸賞金 💠 +${tpl.crystalReward} 結晶</button>
-                        </div>
-                    `;
-                    document.getElementById('claimBountyBtn').onclick = () => {
-                        state.crystals += tpl.crystalReward;
-                        state.bounty = { active: false, templateIdx: state.bounty.templateIdx + 1, completed: false };
-                        audio.playLevelUp();
-                        showToast(`🎯 領取懸賞報酬！獲得 💠${tpl.crystalReward} 技能結晶`);
-                        renderSubtabContent('bounty');
-                        updateQuestTrackerUI();
-                        syncTopAndBattleUI();
-                        saveState();
-                    };
-                } else if (state.bounty.active) {
-                    container.innerHTML = `
-                        <div class="bg-[#211c2b] border border-red-500/60 rounded-lg p-3 flex flex-col items-center text-center gap-1.5">
-                            <div class="text-2xl animate-bounce">👹</div>
-                            <div class="text-xs font-bold text-red-400">通緝目標已出現在地下城中！</div>
-                            <div class="text-[11px] text-gray-300">請前往上方戰鬥畫面擊殺 <b class="text-amber-300">${tpl.prefix}${tpl.name}</b>！</div>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = `
-                        <div class="bg-[#211c2b] border border-[#3a314c] rounded-lg p-3 flex flex-col gap-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold text-amber-300">${tpl.prefix}${tpl.name}</span>
-                                <span class="text-[10px] text-cyan-300">懸賞：💠 ${tpl.crystalReward} + ${tpl.goldMult}倍金幣</span>
-                            </div>
-                            <p class="text-[11px] text-gray-400">接受懸賞合約後，該菁英首領將立即潛入當前地下城樓層，擊殺後可領取高額結晶賞金。</p>
-                            <button id="acceptBountyBtn" class="rpg-btn rpg-btn-gold w-full py-2 rounded-lg text-xs font-bold" ${boss ? 'disabled' : ''}>📜 接取懸賞並引出目標</button>
-                        </div>
-                    `;
-                    document.getElementById('acceptBountyBtn').onclick = () => {
-                        if (boss) return;
-                        state.bounty.active = true;
-                        spawnMonster(1, true);
-                        audio.playExplosion();
-                        showToast(`🎯 通緝目標【${tpl.name}】已在地下城現身！`);
-                        renderSubtabContent('bounty');
-                        saveState();
-                    };
-                }
-            }
-        }
-
-        function renderHeroRoster() {
-            const container = document.getElementById('heroRosterList');
-            container.innerHTML = HERO_DATA.map(h => {
-                const unlocked = state.maxFloor >= h.unlockFloor;
-                const isActive = state.activeHero === h.id;
-                return `
-                    <div class="bg-[#211c2b] border-2 ${isActive ? 'border-amber-400' : 'border-[#3a314c]'} rounded-lg p-2 flex flex-col items-center text-center gap-1 ${!unlocked ? 'opacity-60' : ''}">
-                        <div class="text-2xl">${h.icon}</div>
-                        <div class="text-[11px] font-bold text-white truncate w-full">${h.name}</div>
-                        <div class="text-[9px] text-cyan-300">${h.bonusText}</div>
-                        ${unlocked
-                            ? `<button class="select-hero-btn rpg-btn ${isActive ? 'rpg-btn-gold' : ''} w-full py-1 rounded text-[10px] font-bold mt-1" data-id="${h.id}">
-                                ${isActive ? '出戰中' : '切換打卡'}
-                               </button>`
-                            : `<div class="w-full py-1 rounded bg-black/50 text-[9px] text-gray-400 mt-1">B${h.unlockFloor}F 解鎖</div>`
-                        }
-                    </div>
-                `;
-            }).join('');
-
-            container.querySelectorAll('.select-hero-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    state.activeHero = btn.dataset.id;
+                    const key = btn.dataset.ckey;
+                    const reward = Number(btn.dataset.reward || 5);
+                    if (state.codex.claimed[key]) return;
+                    state.codex.claimed[key] = true;
+                    state.crystals += reward;
                     audio.playCoin();
-                    renderHeroRoster();
+                    saveState();
+                    renderCodexPanel();
                     renderUpgradeList();
                     syncTopAndBattleUI();
-                    saveState();
+                    pushSaveToGoogleSheets(false);
+                    showToast(`📖 圖鑑共鳴領取 +💠 ${reward} 技能結晶！`);
                 });
             });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const active = btn.dataset.tab === tabName;
+                btn.classList.toggle('border-amber-400', active);
+                btn.classList.toggle('text-amber-300', active);
+                btn.classList.toggle('text-gray-300', !active);
+            });
+            document.querySelectorAll('.tab-content').forEach(sec => {
+                sec.classList.toggle('hidden', sec.id !== `tab-${tabName}`);
+            });
+
+            if (tabName === 'upgrade') renderUpgradeList();
+            else if (tabName === 'weapons') renderWeaponList();
+            else if (tabName === 'skills') renderSkillCodex();
+            else if (tabName === 'dolls') renderDollGrid();
+            else if (tabName === 'codex') renderCodexPanel();
+            else if (tabName === 'quests') {
+                renderDailyQuests();
+                renderMineSubtab();
+                renderDefenseSubtab();
+                renderBountySubtab();
+            } else if (tabName === 'heroes') renderHeroRoster();
+        }
+
+        function switchQuestSubtab(subtabName) {
+            document.querySelectorAll('.subtab-btn').forEach(btn => {
+                btn.classList.toggle('subtab-active', btn.dataset.subtab === subtabName);
+                btn.classList.toggle('text-gray-300', btn.dataset.subtab !== subtabName);
+            });
+            document.querySelectorAll('.subtab-content').forEach(sec => {
+                sec.classList.toggle('hidden', sec.id !== `subtab-${subtabName}`);
+            });
+            if (subtabName === 'daily') renderDailyQuests();
+            else if (subtabName === 'mine') renderMineSubtab();
+            else if (subtabName === 'defense') renderDefenseSubtab();
+            else if (subtabName === 'bounty') renderBountySubtab();
         }
 
         function syncTopAndBattleUI() {
+            if (!isLoggedIn) return;
             const stats = getStats();
-            const heroObj = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const nameEl = document.getElementById('playerNameDisplay');
+            const idEl = document.getElementById('playerIdDisplay');
+            const goldEl = document.getElementById('goldDisplay');
+            const crystalEl = document.getElementById('crystalDisplay');
+            const floorEl = document.getElementById('floorDisplay');
+            const waveBar = document.getElementById('waveProgressBar');
+            const waveText = document.getElementById('waveText');
+            const dpsEl = document.getElementById('dpsDisplay');
+            const lvlEl = document.getElementById('heroLevelDisplay');
+            const hpBar = document.getElementById('hpBar');
+            const hpText = document.getElementById('hpText');
+            const mpBar = document.getElementById('mpBar');
+            const mpText = document.getElementById('mpText');
+            const expBar = document.getElementById('expBar');
+            const expPctEl = document.getElementById('expPercentText');
 
-            document.getElementById('headerHeroIcon').textContent = heroObj.icon;
-            document.getElementById('playerNameDisplay').textContent = state.playerName || 'Terence';
-            document.getElementById('playerIdDisplay').textContent = state.playerId || 'PLY-2C9D2E';
-            document.getElementById('goldDisplay').textContent = formatNumber(state.gold);
-            document.getElementById('crystalDisplay').textContent = formatNumber(state.crystals);
+            if (nameEl) nameEl.textContent = state.playerName;
+            if (idEl) idEl.textContent = state.playerId;
+            if (goldEl) goldEl.textContent = formatNumber(state.gold);
+            if (crystalEl) crystalEl.textContent = formatNumber(state.crystals);
+            if (floorEl) floorEl.textContent = `B${state.floor}F`;
 
-            const estDps = (stats.atk / stats.atkInterval) * (1 + stats.critRate * (stats.critDmg - 1));
-            document.getElementById('dpsDisplay').textContent = formatNumber(estDps);
+            const reqKills = 10;
+            const kPct = Math.min(100, Math.floor((state.killsInFloor / reqKills) * 100));
+            if (waveBar) waveBar.style.width = `${kPct}%`;
+            if (waveText) waveText.textContent = `${state.killsInFloor}/${reqKills}`;
 
-            document.getElementById('floorDisplay').textContent = `B${state.floor}F`;
-            document.getElementById('waveProgressBar').style.width = `${Math.min(100, (state.killsInFloor / 10) * 100)}%`;
-            document.getElementById('waveText').textContent = `${state.killsInFloor}/10`;
+            const approxDps = Math.floor(stats.atk / Math.max(0.2, stats.atkInterval));
+            if (dpsEl) dpsEl.textContent = formatNumber(approxDps);
+            if (lvlEl) lvlEl.textContent = String(state.heroLevel);
 
-            if (boss) {
-                document.getElementById('specialBannerBar').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
-                document.getElementById('specialBannerTimer').textContent = `${Math.max(0, boss.timer).toFixed(1)}s`;
-            }
+            const hpPct = Math.max(0, Math.min(100, Math.floor((state.hp / Math.max(1, state.maxHp)) * 100)));
+            if (hpBar) hpBar.style.width = `${hpPct}%`;
+            if (hpText) hpText.textContent = `HP ${hpPct}%`;
 
-            state.equippedSkills.forEach((skId, idx) => {
-                if (!skId) return;
-                const btn = document.getElementById(`eqBtn_${idx}`);
-                const cdEl = document.getElementById(`eqCd_${idx}`);
-                const def = SKILL_CATALOG.find(s => s.id === skId);
-                const rem = skillTimers[skId] || 0;
-                if (btn && cdEl && def) {
-                    if (rem > 0) {
-                        cdEl.classList.remove('hidden');
-                        cdEl.textContent = `${rem.toFixed(1)}s`;
-                        btn.classList.remove('skill-ready');
-                    } else {
-                        cdEl.classList.add('hidden');
-                        if (state.mp >= def.mpCost) btn.classList.add('skill-ready');
-                        else btn.classList.remove('skill-ready');
-                    }
-                }
-            });
-
-            document.getElementById('heroLevelDisplay').textContent = state.heroLevel;
-            const hpPct = Math.min(100, (state.hp / state.maxHp) * 100);
-            document.getElementById('hpBar').style.width = `${hpPct}%`;
-            document.getElementById('hpText').textContent = `HP ${Math.round(hpPct)}%`;
-
-            const mpPct = (state.mp / state.maxMp) * 100;
-            document.getElementById('mpBar').style.width = `${mpPct}%`;
-            document.getElementById('mpText').textContent = `MP ${Math.floor(state.mp)}/${state.maxMp}`;
+            const mpPct = Math.max(0, Math.min(100, Math.floor((state.mp / Math.max(1, state.maxMp)) * 100)));
+            if (mpBar) mpBar.style.width = `${mpPct}%`;
+            if (mpText) mpText.textContent = `MP ${Math.floor(state.mp)}/${Math.floor(state.maxMp)}`;
 
             const reqExp = getRequiredExp(state.heroLevel);
-            const expPct = Math.min(100, (state.exp / reqExp) * 100);
-            document.getElementById('expBar').style.width = `${expPct}%`;
-            document.getElementById('expPercentText').textContent = `${expPct.toFixed(1)}%`;
+            const expPct = Math.max(0, Math.min(100, Math.floor((state.exp / Math.max(1, reqExp)) * 100)));
+            if (expBar) expBar.style.width = `${expPct}%`;
+            if (expPctEl) expPctEl.textContent = `${expPct}%`;
 
-            const mineTimerEl = document.getElementById('activeMineCountdown');
-            if (mineTimerEl && state.mine.activeRoute && !state.mine.readyToClaim) {
-                mineTimerEl.textContent = `${Math.max(0, Math.ceil((state.mine.endTime - Date.now()) / 1000))} 秒`;
-            }
-
-            document.querySelectorAll('.upg-buy-btn').forEach(btn => { btn.disabled = state.gold < Number(btn.dataset.cost); });
-            const summonBtn = document.getElementById('summonDollBtn');
-            if (summonBtn) summonBtn.disabled = state.gold < getSummonDollCost();
-            const forgeGoldBtn = document.getElementById('forgeGoldBtn');
-            if (forgeGoldBtn) forgeGoldBtn.disabled = state.gold < getForgeGoldCost();
-        }
-
-        function switchToTab(targetTab) {
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                if (b.dataset.tab === targetTab) {
-                    b.classList.add('border-amber-400', 'text-amber-300');
-                    b.classList.remove('text-gray-300');
-                } else {
-                    b.classList.remove('border-amber-400', 'text-amber-300');
-                    b.classList.add('text-gray-300');
-                }
-            });
-
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
-
-            if (targetTab === 'upgrade') renderUpgradeList();
-            if (targetTab === 'weapons') renderWeaponList();
-            if (targetTab === 'skills') renderSkillCodex();
-            if (targetTab === 'dolls') renderDollGrid();
-            if (targetTab === 'codex') renderCodexPage();
-            if (targetTab === 'quests') {
-                const activeSub = document.querySelector('.subtab-btn.subtab-active')?.dataset.subtab || 'daily';
-                renderSubtabContent(activeSub);
-            }
-            if (targetTab === 'heroes') renderHeroRoster();
-        }
-
-        function openProfileModal() {
-            const cStats = getCodexStats();
-            document.getElementById('inputPlayerId').value = state.playerId;
-            document.getElementById('inputPlayerName').value = state.playerName;
-
-            const sec = Math.floor(state.shiftSeconds);
-            const hh = String(Math.floor(sec / 3600)).padStart(2, '0');
-            const mm = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-            const ss = String(sec % 60).padStart(2, '0');
-            document.getElementById('modalShiftTime').textContent = `${hh}:${mm}:${ss}`;
-
-            document.getElementById('statMaxFloor').textContent = `B${state.maxFloor}F`;
-            document.getElementById('statKills').textContent = formatNumber(state.totalKills);
-            document.getElementById('statCodex').textContent = `${Math.round((cStats.unlockedCount / cStats.total) * 100)}%`;
-            document.getElementById('statMerges').textContent = formatNumber(state.totalMerges);
-            document.getElementById('statForges').textContent = formatNumber(state.weaponForgeCount);
-            document.getElementById('statSkills').textContent = formatNumber(state.totalSkills);
-
-            document.getElementById('profileCloudModal').classList.remove('hidden');
+            renderEquippedSkillBar();
+            updateQuestTrackerUI();
+            updateCodexRedDot();
         }
 
         function refreshAllUI() {
-            renderEquippedSkillBar();
-            renderUpgradeList();
-            renderWeaponList();
-            renderSkillCodex();
-            renderDollGrid();
-            renderCodexPage();
-            renderSubtabContent('daily');
-            renderHeroRoster();
-            updateQuestTrackerUI();
-            updateCodexRedDot();
             syncTopAndBattleUI();
+            const activeTabBtn = document.querySelector('.tab-btn.border-amber-400');
+            switchTab((activeTabBtn && activeTabBtn.dataset.tab) || 'upgrade');
         }
 
-        function checkOfflineEarnings() {
+        function renderKnownAccountsList() {
+            const listEl = document.getElementById('knownAccountsList');
+            const countEl = document.getElementById('knownAccountsCount');
+            if (!listEl) return;
+
+            const accounts = getKnownAccounts();
+            if (countEl) countEl.textContent = `${accounts.length} 個帳號`;
+
+            if (accounts.length === 0) {
+                listEl.innerHTML = '<div class="text-[11px] text-gray-500 text-center py-2">尚無歷史登入紀錄，請輸入新 ID 開始</div>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            accounts.forEach(acc => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'w-full bg-[#1e1929] hover:bg-[#292238] border border-[#3d3352] rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2 text-left transition cursor-pointer';
+                btn.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-amber-300 truncate">${acc.playerName}</div>
+                        <div class="text-[10px] font-mono text-cyan-300 truncate">${acc.playerId}</div>
+                    </div>
+                    <div class="text-[10px] text-purple-300 font-mono shrink-0">B${acc.maxFloor || 1}F · Lv.${acc.heroLevel || 1}</div>
+                `;
+                btn.addEventListener('click', () => {
+                    const idInput = document.getElementById('loginPlayerIdInput');
+                    const nameInput = document.getElementById('loginPlayerNameInput');
+                    if (idInput) idInput.value = acc.playerId;
+                    if (nameInput) nameInput.value = acc.playerName;
+                    completeLogin(acc.playerId, acc.playerName);
+                });
+                listEl.appendChild(btn);
+            });
+        }
+
+        function openLoginModal() {
+            const modal = document.getElementById('loginModal');
+            const idInput = document.getElementById('loginPlayerIdInput');
+            const nameInput = document.getElementById('loginPlayerNameInput');
+            if (idInput) idInput.value = generatePlayerId();
+            if (nameInput) nameInput.value = '';
+            renderKnownAccountsList();
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function checkOfflineReward() {
             const now = Date.now();
-            const elapsedSec = Math.floor((now - state.lastSaveTime) / 1000);
-            if (elapsedSec >= 60) {
-                const cappedSec = Math.min(elapsedSec, 8 * 3600);
-                const stats = getStats();
-                const floorRewardScale = Math.pow(1.32, state.floor - 1);
-                const offlineGold = Math.floor((cappedSec / 2.5) * 12 * floorRewardScale * stats.goldMult);
-                const offlineExp = Math.floor((cappedSec / 2.5) * 16 * floorRewardScale);
+            const elapsedSec = Math.floor((now - (state.lastSaveTime || now)) / 1000);
+            if (elapsedSec < 30 || state.totalKills <= 0) return;
 
+            const cappedSec = Math.min(elapsedSec, 28800);
+            const stats = getStats();
+            const gainGold = Math.max(20, Math.floor((cappedSec / 5) * (12 + state.floor * 8) * stats.goldMult));
+            const gainExp = Math.max(10, Math.floor((cappedSec / 6) * (10 + state.floor * 5)));
+
+            const timeEl = document.getElementById('offlineTimeText');
+            const goldEl = document.getElementById('offlineGoldText');
+            const expEl = document.getElementById('offlineExpText');
+            const modal = document.getElementById('offlineModal');
+
+            if (timeEl) {
                 const mins = Math.floor(cappedSec / 60);
-                document.getElementById('offlineTimeText').textContent = mins >= 60 ? `${Math.floor(mins / 60)} 小時 ${mins % 60} 分鐘` : `${mins} 分鐘`;
-                document.getElementById('offlineGoldText').textContent = `+${formatNumber(offlineGold)}`;
-                document.getElementById('offlineExpText').textContent = `+${formatNumber(offlineExp)}`;
+                timeEl.textContent = mins > 0 ? `${mins} 分鐘` : `${cappedSec} 秒`;
+            }
+            if (goldEl) goldEl.textContent = `+${formatNumber(gainGold)}`;
+            if (expEl) expEl.textContent = `+${formatNumber(gainExp)}`;
 
-                const modal = document.getElementById('offlineModal');
+            if (modal) {
+                modal.dataset.pendingGold = String(gainGold);
+                modal.dataset.pendingExp = String(gainExp);
                 modal.classList.remove('hidden');
-                document.getElementById('claimOfflineBtn').onclick = () => {
-                    state.gold += offlineGold;
-                    gainExp(offlineExp);
-                    audio.playLevelUp();
-                    modal.classList.add('hidden');
-                    syncTopAndBattleUI();
-                    renderUpgradeList();
-                    saveState();
-                };
             }
         }
 
+        async function completeLogin(rawId, rawName) {
+            const cleanId = sanitizePlayerId(rawId);
+            const cleanName = String(rawName || '').trim() || `冒險者_${cleanId.slice(-4)}`;
+
+            let loaded = loadAccountState(cleanId, cleanName);
+            const cloudLoaded = await tryFetchCloudSave(cleanId);
+            if (cloudLoaded && (!localStorage.getItem(STORAGE_PREFIX + cleanId) || (cloudLoaded.lastSaveTime || 0) > (loaded.lastSaveTime || 0))) {
+                loaded = cloudLoaded;
+            }
+
+            loaded.playerId = cleanId;
+            loaded.playerName = cleanName;
+            state = loaded;
+            isLoggedIn = true;
+            skillTimers = {};
+
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) loginModal.classList.add('hidden');
+
+            saveState();
+            resizeCanvas();
+            resetFloorWave(false);
+            refreshAllUI();
+            checkOfflineReward();
+            pushSaveToGoogleSheets(true);
+            showToast(`⚡ 歡迎打卡上班，${state.playerName} (${state.playerId})！`);
+        }
+
+        function openProfileModal() {
+            const modal = document.getElementById('profileCloudModal');
+            if (!modal) return;
+            const idInput = document.getElementById('inputPlayerId');
+            const nameInput = document.getElementById('inputPlayerName');
+            const shiftEl = document.getElementById('modalShiftTime');
+
+            if (idInput) idInput.value = state.playerId;
+            if (nameInput) nameInput.value = state.playerName;
+            if (shiftEl) {
+                const sec = Math.floor(state.shiftSeconds || 0);
+                const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+                const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+                const s = String(sec % 60).padStart(2, '0');
+                shiftEl.textContent = `${h}:${m}:${s}`;
+            }
+
+            const cStats = getCodexStats();
+            const setTxt = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+            setTxt('statMaxFloor', `B${state.maxFloor}F`);
+            setTxt('statKills', formatNumber(state.totalKills));
+            setTxt('statCodex', `${Math.floor((cStats.unlockedCount / Math.max(1, cStats.total)) * 100)}%`);
+            setTxt('statMerges', formatNumber(state.totalMerges));
+            setTxt('statForges', formatNumber(state.weaponForgeCount));
+            setTxt('statSkills', formatNumber(state.totalSkills));
+
+            modal.classList.remove('hidden');
+        }
+
         function bindEvents() {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => switchToTab(btn.dataset.tab));
+            const safeOn = (id, evt, fn) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener(evt, fn);
+            };
+
+            safeOn('confirmLoginBtn', 'click', () => {
+                const idVal = (document.getElementById('loginPlayerIdInput') || {}).value || '';
+                const nameVal = (document.getElementById('loginPlayerNameInput') || {}).value || '';
+                completeLogin(idVal, nameVal);
             });
 
-            document.querySelectorAll('.subtab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.subtab-btn').forEach(b => {
-                        b.classList.remove('subtab-active');
-                        b.classList.add('text-gray-300');
-                    });
-                    btn.classList.add('subtab-active');
-                    btn.classList.remove('text-gray-300');
-                    const sub = btn.dataset.subtab;
-                    document.querySelectorAll('.subtab-content').forEach(c => c.classList.add('hidden'));
-                    document.getElementById(`subtab-${sub}`).classList.remove('hidden');
-                    renderSubtabContent(sub);
-                });
+            safeOn('loginGenIdBtn', 'click', () => {
+                const idInput = document.getElementById('loginPlayerIdInput');
+                if (idInput) idInput.value = generatePlayerId();
             });
 
-            document.querySelectorAll('.codex-cat-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.codex-cat-btn').forEach(b => {
-                        b.classList.remove('subtab-active');
-                        b.classList.add('text-gray-300');
-                    });
-                    btn.classList.add('subtab-active');
-                    btn.classList.remove('text-gray-300');
-                    activeCodexCat = btn.dataset.cat;
-                    renderCodexPage();
-                });
+            safeOn('openLoginTopBtn', 'click', () => openLoginModal());
+            safeOn('switchAccountFromProfileBtn', 'click', () => {
+                const pModal = document.getElementById('profileCloudModal');
+                if (pModal) pModal.classList.add('hidden');
+                openLoginModal();
             });
 
-            document.getElementById('questTrackerBtn').addEventListener('click', () => {
-                for (const q of QUEST_DEFS) {
-                    const prog = state.questProgress[q.id];
-                    const target = q.baseTarget + prog.tier * q.step;
-                    if (prog.count >= target) { claimDailyQuest(q.id); return; }
+            safeOn('openProfileBtn', 'click', () => openProfileModal());
+            safeOn('closeProfileModalBtn', 'click', () => {
+                const modal = document.getElementById('profileCloudModal');
+                if (modal) modal.classList.add('hidden');
+            });
+
+            safeOn('genNewIdBtn', 'click', () => {
+                const inp = document.getElementById('inputPlayerId');
+                if (inp) inp.value = generatePlayerId();
+            });
+
+            safeOn('saveProfileIdentityBtn', 'click', () => {
+                const idInp = document.getElementById('inputPlayerId');
+                const nameInp = document.getElementById('inputPlayerName');
+                const newId = sanitizePlayerId(idInp ? idInp.value : state.playerId);
+                const newName = String((nameInp ? nameInp.value : state.playerName) || '').trim() || state.playerName;
+
+                if (newId !== state.playerId) {
+                    completeLogin(newId, newName);
+                } else {
+                    state.playerName = newName;
+                    saveState();
+                    syncTopAndBattleUI();
+                    pushSaveToGoogleSheets(true);
+                    showToast(`✅ 已更新玩家識別：${state.playerName} (${state.playerId})`);
                 }
-                switchToTab('quests');
+            });
+
+            safeOn('muteBtn', 'click', () => {
+                audio.muted = !audio.muted;
+                const btn = document.getElementById('muteBtn');
+                if (btn) btn.textContent = audio.muted ? '🔇' : '🔊';
+            });
+
+            safeOn('autoSkillBtn', 'click', () => {
+                state.autoSkill = !state.autoSkill;
+                const dot = document.getElementById('autoStatusDot');
+                if (dot) {
+                    dot.textContent = state.autoSkill ? 'ON' : 'OFF';
+                    dot.className = state.autoSkill ? 'text-[9px] text-emerald-400' : 'text-[9px] text-gray-400';
+                }
+                saveState();
+            });
+
+            safeOn('bossBtn', 'click', () => {
+                if (battle.mode === 'boss') {
+                    endBossMode(false);
+                } else if (battle.mode === 'normal') {
+                    startBossMode();
+                } else {
+                    showToast('目前正在其他特殊模式中');
+                }
+            });
+
+            safeOn('questTrackerBtn', 'click', () => {
+                const qDef = QUEST_DEFS.find(q => {
+                    const p = state.questProgress[q.id];
+                    return p && p.count >= q.baseTarget + p.tier * q.step;
+                });
+                if (qDef) {
+                    claimQuestReward(qDef.id);
+                } else {
+                    switchTab('quests');
+                    switchQuestSubtab('daily');
+                }
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
             });
 
             document.querySelectorAll('.mult-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    buyMultiplier = Number(btn.dataset.mult);
+                    buyMultiplier = Number(btn.dataset.mult || 1);
                     document.querySelectorAll('.mult-btn').forEach(b => {
-                        b.className = 'mult-btn px-2 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-300';
+                        const active = Number(b.dataset.mult) === buyMultiplier;
+                        b.className = active
+                            ? 'mult-btn px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold'
+                            : 'mult-btn px-2 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-300';
                     });
-                    btn.className = 'mult-btn px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-bold';
                     renderUpgradeList();
                 });
             });
 
-            document.getElementById('forgeGoldBtn').addEventListener('click', () => forgeWeapon(false));
-            document.getElementById('forgeCrystalBtn').addEventListener('click', () => forgeWeapon(true));
+            safeOn('forgeGoldBtn', 'click', () => forgeWeapon(false));
+            safeOn('forgeCrystalBtn', 'click', () => forgeWeapon(true));
 
-            document.getElementById('summonDollBtn').addEventListener('click', () => summonDolls(1));
-            document.getElementById('summonFiveBtn').addEventListener('click', () => summonDolls(5));
-            document.getElementById('autoMergeBtn').addEventListener('click', autoMergeAllDolls);
+            safeOn('summonDollBtn', 'click', () => summonDoll(1));
+            safeOn('summonFiveBtn', 'click', () => summonDoll(5));
+            safeOn('autoMergeBtn', 'click', () => autoMergeDolls());
 
-            document.getElementById('autoSkillBtn').addEventListener('click', () => {
-                state.autoSkill = !state.autoSkill;
-                const dot = document.getElementById('autoStatusDot');
-                dot.textContent = state.autoSkill ? 'ON' : 'OFF';
-                dot.className = state.autoSkill ? 'text-[9px] text-emerald-400' : 'text-[9px] text-gray-500';
-                showToast(state.autoSkill ? '已開啟自動循環施放技能' : '已切換為手動施放技能');
-            });
-
-            document.getElementById('bossBtn').addEventListener('click', startBossBattle);
-            document.getElementById('muteBtn').addEventListener('click', () => {
-                audio.muted = !audio.muted;
-                document.getElementById('muteBtn').textContent = audio.muted ? '🔇' : '🔊';
+            document.querySelectorAll('.codex-cat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeCodexCat = btn.dataset.cat;
+                    document.querySelectorAll('.codex-cat-btn').forEach(b => {
+                        b.classList.toggle('subtab-active', b.dataset.cat === activeCodexCat);
+                        b.classList.toggle('text-gray-300', b.dataset.cat !== activeCodexCat);
+                    });
+                    renderCodexPanel();
+                });
             });
 
-            document.getElementById('openProfileBtn').addEventListener('click', openProfileModal);
-            document.getElementById('openLoginTopBtn').addEventListener('click', () => {
-                document.getElementById('profileCloudModal').classList.add('hidden');
-                openLoginModal(state.playerId, state.playerName);
-            });
-            document.getElementById('switchAccountFromProfileBtn').addEventListener('click', () => {
-                document.getElementById('profileCloudModal').classList.add('hidden');
-                openLoginModal('', '');
-            });
-            document.getElementById('loginGenIdBtn').addEventListener('click', () => {
-                document.getElementById('loginPlayerIdInput').value = generatePlayerId();
-            });
-            document.getElementById('confirmLoginBtn').addEventListener('click', () => {
-                const pid = document.getElementById('loginPlayerIdInput').value;
-                const pname = document.getElementById('loginPlayerNameInput').value;
-                loginWithAccount(pid, pname);
-            });
-            document.getElementById('closeProfileModalBtn').addEventListener('click', () => {
-                document.getElementById('profileCloudModal').classList.add('hidden');
+            document.querySelectorAll('.subtab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchQuestSubtab(btn.dataset.subtab));
             });
 
-            document.getElementById('genNewIdBtn').addEventListener('click', () => {
-                document.getElementById('inputPlayerId').value = generatePlayerId();
-            });
-
-            document.getElementById('saveProfileIdentityBtn').addEventListener('click', () => {
-                const oldKey = STORAGE_PREFIX + state.playerId;
-                const newId = sanitizePlayerId(document.getElementById('inputPlayerId').value);
-                const newName = document.getElementById('inputPlayerName').value.trim();
-                state.playerId = newId;
-                if (newName) state.playerName = newName;
-                try {
-                    if (oldKey !== STORAGE_PREFIX + state.playerId) {
-                        localStorage.removeItem(oldKey);
-                    }
-                } catch (e) {}
+            safeOn('claimOfflineBtn', 'click', () => {
+                const modal = document.getElementById('offlineModal');
+                const g = Number((modal && modal.dataset.pendingGold) || 0);
+                const e = Number((modal && modal.dataset.pendingExp) || 0);
+                state.gold += g;
+                gainExp(e);
+                if (modal) modal.classList.add('hidden');
+                audio.playCoin();
                 saveState();
                 syncTopAndBattleUI();
-                showToast(`✅ 已更新玩家識別：${state.playerName} (${state.playerId})`);
-                if (state.autoCloudSync) pushSaveToGoogleSheets();
+                pushSaveToGoogleSheets(false);
             });
         }
 
+        /**
+         * ==========================================
+         * 3. 三層地下城戰鬥畫布、技能特效與遊戲迴圈
+         * ==========================================
+         */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        let canvasW = 480;
+        let canvasH = 320;
+        let platformYs = [110, 175, 240];
+
+        const battle = {
+            mode: 'normal',
+            timer: 30,
+            attackTimer: 0,
+            spawnTimer: 0,
+            enemyAtkTimer: 0,
+            hero: {
+                x: 120,
+                y: 175,
+                layer: 1,
+                targetLayer: 1,
+                vx: 0,
+                vy: 0,
+                facing: 1,
+                swingTimer: 0,
+                hurtTimer: 0
+            },
+            monsters: [],
+            effects: [],
+            floatingTexts: [],
+            screenShake: 0
+        };
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvasWrapper');
+            if (!wrapper || !canvas || !ctx) return;
+            const rect = wrapper.getBoundingClientRect();
+            canvasW = Math.max(260, Math.floor(rect.width));
+            canvasH = Math.max(180, Math.floor(rect.height));
+            canvas.width = canvasW;
+            canvas.height = canvasH;
+            ctx.imageSmoothingEnabled = false;
+
+            const topPad = Math.max(78, Math.floor(canvasH * 0.28));
+            const botPad = Math.max(82, Math.floor(canvasH * 0.30));
+            const usable = Math.max(90, canvasH - topPad - botPad);
+            platformYs = [
+                topPad,
+                topPad + Math.floor(usable * 0.52),
+                topPad + usable
+            ];
+            battle.hero.y = platformYs[battle.hero.layer] || platformYs[1];
+        }
+
+        function createMonster(options = {}) {
+            const layer = options.layer !== undefined ? options.layer : Math.floor(Math.random() * 3);
+            const floorScale = Math.pow(1.26, Math.max(0, state.floor - 1));
+
+            if (options.isBoss) {
+                const bDef = BOSS_CATALOG[(state.floor - 1) % BOSS_CATALOG.length];
+                unlockCodexEntry('monsters', bDef.id);
+                const maxHp = Math.floor(260 * floorScale * 4.2);
+                return {
+                    id: 'boss_' + Date.now(),
+                    codexId: bDef.id,
+                    name: bDef.name,
+                    icon: bDef.icon,
+                    color: '#dc2626',
+                    accent: '#fde047',
+                    layer: 1,
+                    x: canvasW * 0.72,
+                    y: platformYs[1],
+                    vx: -48,
+                    hp: maxHp,
+                    maxHp,
+                    dmg: Math.max(6, Math.floor((6 + state.floor * 3.5) * 1.4)),
+                    size: 36,
+                    isBoss: true,
+                    isBounty: false,
+                    goldReward: Math.floor(140 * floorScale),
+                    expReward: Math.floor(65 * floorScale),
+                    freezeTimer: 0,
+                    poisonTimer: 0,
+                    acidMult: 1,
+                    hitFlash: 0
+                };
+            }
+
+            if (options.isBounty && options.bountyDef) {
+                const bDef = options.bountyDef;
+                unlockCodexEntry('monsters', bDef.id);
+                const maxHp = Math.floor(160 * floorScale * bDef.hpMult);
+                return {
+                    id: 'bounty_' + Date.now(),
+                    codexId: bDef.id,
+                    name: bDef.prefix + bDef.name,
+                    icon: bDef.icon,
+                    color: bDef.color,
+                    accent: bDef.accent,
+                    layer,
+                    x: canvasW * 0.78,
+                    y: platformYs[layer],
+                    vx: -62,
+                    hp: maxHp,
+                    maxHp,
+                    dmg: Math.max(5, Math.floor((5 + state.floor * 3) * 1.2)),
+                    size: 30,
+                    isBoss: false,
+                    isBounty: true,
+                    bountyDef: bDef,
+                    goldReward: Math.floor(85 * floorScale * bDef.goldMult),
+                    expReward: Math.floor(45 * floorScale),
+                    freezeTimer: 0,
+                    poisonTimer: 0,
+                    acidMult: 1,
+                    hitFlash: 0
+                };
+            }
+
+            const mDef = MONSTER_TYPES[Math.floor(Math.random() * MONSTER_TYPES.length)];
+            unlockCodexEntry('monsters', mDef.id);
+            const maxHp = Math.floor(55 * floorScale * mDef.hpMult);
+            const dir = Math.random() < 0.5 ? -1 : 1;
+            const startX = dir < 0 ? canvasW - 36 : 36;
+            return {
+                id: 'm_' + Math.random().toString(36).slice(2, 8),
+                codexId: mDef.id,
+                name: mDef.name,
+                icon: mDef.icon,
+                color: mDef.color,
+                accent: mDef.accent,
+                layer,
+                x: startX,
+                y: platformYs[layer],
+                vx: dir * (38 + Math.random() * 24),
+                hp: maxHp,
+                maxHp,
+                dmg: Math.max(3, Math.floor((3 + state.floor * 2.2) * mDef.hpMult)),
+                size: mDef.size,
+                isBoss: false,
+                isBounty: false,
+                goldReward: Math.floor(24 * floorScale * mDef.hpMult),
+                expReward: Math.floor(14 * floorScale),
+                freezeTimer: 0,
+                poisonTimer: 0,
+                acidMult: 1,
+                hitFlash: 0
+            };
+        }
+
+        function spawnFloatingText(x, y, text, color = '#fbbf24', scale = 1) {
+            battle.floatingTexts.push({
+                x: x + (Math.random() - 0.5) * 26,
+                y: y - 10,
+                vy: -42 - Math.random() * 18,
+                text,
+                color,
+                scale,
+                alpha: 1,
+                life: 0.78
+            });
+        }
+
+        function gainExp(amount) {
+            state.exp += amount;
+            let leveled = false;
+            while (state.exp >= getRequiredExp(state.heroLevel)) {
+                state.exp -= getRequiredExp(state.heroLevel);
+                state.heroLevel += 1;
+                state.maxHp = 100 + (state.heroLevel - 1) * 22;
+                state.hp = state.maxHp;
+                state.maxMp = 100 + (state.heroLevel - 1) * 8;
+                state.mp = state.maxMp;
+                leveled = true;
+            }
+            if (leveled) {
+                audio.playLevelUp();
+                spawnFloatingText(battle.hero.x, battle.hero.y - 36, `LEVEL UP! Lv.${state.heroLevel}`, '#a3e635', 1.25);
+                showToast(`🎉 英雄升級至 Lv.${state.heroLevel}！HP/MP 已全滿`);
+                pushSaveToGoogleSheets(true);
+            }
+        }
+
+        function advanceFloor() {
+            state.floor += 1;
+            if (state.floor > state.maxFloor) {
+                state.maxFloor = state.floor;
+            }
+            state.killsInFloor = 0;
+
+            HERO_DATA.forEach(h => {
+                if (state.maxFloor >= h.unlockFloor) {
+                    unlockCodexEntry('heroes', h.id);
+                }
+            });
+
+            audio.playLevelUp();
+            showToast(`🪜 推進至地下城 B${state.floor}F！`);
+            resetFloorWave(false);
+            pushSaveToGoogleSheets(true);
+        }
+
+        function endBossMode(won) {
+            const banner = document.getElementById('specialBannerContainer');
+            if (banner) banner.classList.add('hidden');
+            const btnTxt = document.getElementById('bossBtnText');
+            if (btnTxt) btnTxt.textContent = '首領';
+
+            if (won) {
+                addQuestProgress('q_boss', 1);
+                advanceFloor();
+            } else {
+                battle.mode = 'normal';
+                resetFloorWave(false);
+                showToast('⏰ 首領戰時間到，已返回一般刷怪');
+            }
+        }
+
+        function startBossMode() {
+            battle.mode = 'boss';
+            battle.timer = 30.0;
+            battle.monsters = [createMonster({ isBoss: true })];
+
+            const banner = document.getElementById('specialBannerContainer');
+            const title = document.getElementById('specialBannerTitle');
+            const btnTxt = document.getElementById('bossBtnText');
+            const bDef = BOSS_CATALOG[(state.floor - 1) % BOSS_CATALOG.length];
+            if (banner) banner.classList.remove('hidden');
+            if (title) title.textContent = `👹 B${state.floor}F 首領：${bDef.name}`;
+            if (btnTxt) btnTxt.textContent = '放棄';
+        }
+
+        function endDefenseMode(completed) {
+            const banner = document.getElementById('specialBannerContainer');
+            if (banner) banner.classList.add('hidden');
+            battle.mode = 'normal';
+
+            if (completed) {
+                const bonusGold = Math.floor(260 * state.floor * getStats().goldMult);
+                const bonusCrystal = 8 + Math.floor(state.floor * 0.5);
+                state.gold += bonusGold;
+                state.crystals += bonusCrystal;
+                audio.playCoin();
+                showToast(`🛡️ 加班防禦成功！獲得 🪙 ${formatNumber(bonusGold)} 與 💠 ${bonusCrystal}`);
+                syncTopAndBattleUI();
+                pushSaveToGoogleSheets(true);
+            }
+            resetFloorWave(false);
+        }
+
+        function startDefenseMode() {
+            battle.mode = 'defense';
+            battle.timer = 30.0;
+            battle.monsters = [];
+            for (let i = 0; i < 6; i++) {
+                battle.monsters.push(createMonster({ layer: i % 3 }));
+            }
+
+            const banner = document.getElementById('specialBannerContainer');
+            const title = document.getElementById('specialBannerTitle');
+            if (banner) banner.classList.remove('hidden');
+            if (title) title.textContent = '🛡️ 加班防禦戰進行中';
+            showToast('🛡️ 加班防禦戰開始！撐過 30 秒領取獎勵');
+        }
+
+        function startBountyMode(tpl) {
+            battle.mode = 'bounty';
+            battle.timer = 35.0;
+            battle.monsters = [createMonster({ isBounty: true, bountyDef: tpl })];
+
+            const banner = document.getElementById('specialBannerContainer');
+            const title = document.getElementById('specialBannerTitle');
+            if (banner) banner.classList.remove('hidden');
+            if (title) title.textContent = `🎯 懸賞目標：${tpl.prefix}${tpl.name}`;
+            showToast(`🎯 懸賞目標已現身：${tpl.prefix}${tpl.name}`);
+        }
+
+        function resetFloorWave(keepMonsters = false) {
+            if (!keepMonsters) {
+                battle.mode = 'normal';
+                const banner = document.getElementById('specialBannerContainer');
+                if (banner) banner.classList.add('hidden');
+                const btnTxt = document.getElementById('bossBtnText');
+                if (btnTxt) btnTxt.textContent = '首領';
+                battle.monsters = [];
+                for (let i = 0; i < 4; i++) {
+                    battle.monsters.push(createMonster({ layer: i % 3 }));
+                }
+            }
+            syncTopAndBattleUI();
+        }
+
+        function handleMonsterDefeated(m) {
+            const stats = getStats();
+            const goldGain = Math.max(1, Math.floor(m.goldReward * stats.goldMult));
+            const expGain = Math.max(1, m.expReward);
+
+            state.gold += goldGain;
+            state.totalKills = (state.totalKills || 0) + 1;
+            addQuestProgress('q_kill', 1);
+            gainExp(expGain);
+
+            if (m.isBounty && m.bountyDef) {
+                state.crystals += m.bountyDef.crystalReward;
+                state.totalBounties = (state.totalBounties || 0) + 1;
+                showToast(`🎯 討伐成功！獲得 💠 ${m.bountyDef.crystalReward} 結晶與 🪙 ${formatNumber(goldGain)}`);
+            } else if (m.isBoss) {
+                state.crystals += 6;
+                showToast(`🏆 擊敗樓層首領！獲得 🪙 ${formatNumber(goldGain)} 與 💠 6 結晶`);
+            } else if (battle.mode === 'normal') {
+                state.killsInFloor = Math.min(10, (state.killsInFloor || 0) + 1);
+                if (state.killsInFloor >= 10) {
+                    startBossMode();
+                }
+            }
+
+            if (m.isBoss && battle.mode === 'boss') {
+                endBossMode(true);
+                return;
+            }
+            if (m.isBounty && battle.mode === 'bounty') {
+                battle.mode = 'normal';
+                const banner = document.getElementById('specialBannerContainer');
+                if (banner) banner.classList.add('hidden');
+                pushSaveToGoogleSheets(true);
+            }
+
+            syncTopAndBattleUI();
+        }
+
+        function damageMonster(m, rawDamage, isCrit = false, colorOverride = null) {
+            if (!m || m.hp <= 0) return;
+            const mult = m.acidMult || 1;
+            const dmg = Math.max(1, Math.floor(rawDamage * mult));
+            m.hp -= dmg;
+            m.hitFlash = 0.12;
+
+            const txtColor = colorOverride || (isCrit ? '#ef4444' : '#fbbf24');
+            spawnFloatingText(m.x, m.y - m.size, isCrit ? `${formatNumber(dmg)}!` : formatNumber(dmg), txtColor, isCrit ? 1.2 : 1.0);
+
+            if (m.hp <= 0) {
+                const idx = battle.monsters.indexOf(m);
+                if (idx !== -1) battle.monsters.splice(idx, 1);
+                handleMonsterDefeated(m);
+            }
+        }
+
+        function castSkill(skillId) {
+            const def = SKILL_CATALOG.find(s => s.id === skillId);
+            const sLvl = state.unlockedSkills[skillId] || 0;
+            if (!def || sLvl <= 0) return;
+            if ((skillTimers[skillId] || 0) > 0) return;
+            if (state.mp < def.mpCost) return;
+
+            state.mp -= def.mpCost;
+            skillTimers[skillId] = def.cd;
+            state.totalSkills = (state.totalSkills || 0) + 1;
+            addQuestProgress('q_skill', 1);
+
+            const stats = getStats();
+            const skillLvlMult = 1 + (sLvl - 1) * 0.18;
+            const baseSkillDmg = stats.atk * def.mult * skillLvlMult * stats.skillPowerMult;
+
+            if (skillId === 'lightning') {
+                audio.playLightning();
+                battle.screenShake = 0.25;
+                battle.effects.push({ type: 'lightning', life: 0.35, maxLife: 0.35 });
+                [...battle.monsters].forEach(m => {
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#38bdf8');
+                });
+            } else if (skillId === 'meteor') {
+                audio.playExplosion();
+                battle.screenShake = 0.35;
+                for (let i = 0; i < 4; i++) {
+                    const tx = canvasW * (0.2 + i * 0.2);
+                    const ty = platformYs[i % 3];
+                    battle.effects.push({ type: 'meteor', x: tx, y: ty, life: 0.45, maxLife: 0.45 });
+                }
+                [...battle.monsters].forEach(m => {
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#fb923c');
+                });
+            } else if (skillId === 'slash') {
+                audio.playSlash();
+                battle.effects.push({ type: 'slash', x: battle.hero.x, y: battle.hero.y, dir: battle.hero.facing, life: 0.28, maxLife: 0.28 });
+                [...battle.monsters].forEach(m => {
+                    if (Math.abs(m.layer - battle.hero.layer) <= 1) {
+                        const isCrit = Math.random() < stats.critRate;
+                        damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#c084fc');
+                    }
+                });
+            } else if (skillId === 'blizzard') {
+                audio.playFrost();
+                battle.effects.push({ type: 'frost', life: 0.45, maxLife: 0.45 });
+                [...battle.monsters].forEach(m => {
+                    m.freezeTimer = 2.5;
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#7dd3fc');
+                });
+            } else if (skillId === 'judgment') {
+                audio.playHoly();
+                const heal = Math.floor(state.maxHp * 0.30);
+                state.hp = Math.min(state.maxHp, state.hp + heal);
+                spawnFloatingText(battle.hero.x, battle.hero.y - 30, `+${heal} HP`, '#4ade80', 1.1);
+                battle.effects.push({ type: 'holy', x: canvasW * 0.55, life: 0.45, maxLife: 0.45 });
+                [...battle.monsters].forEach(m => {
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#fde047');
+                });
+            } else if (skillId === 'acid') {
+                audio.playAcid();
+                battle.effects.push({ type: 'acid', life: 1.2, maxLife: 1.2 });
+                [...battle.monsters].forEach(m => {
+                    m.poisonTimer = 4.0;
+                    m.acidMult = 1.25;
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * 0.65 * (isCrit ? stats.critDmg : 1), isCrit, '#a3e635');
+                });
+            } else if (skillId === 'blackhole') {
+                audio.playBlackHole();
+                battle.screenShake = 0.45;
+                battle.effects.push({ type: 'blackhole', x: canvasW * 0.55, y: platformYs[1], life: 0.65, maxLife: 0.65 });
+                [...battle.monsters].forEach(m => {
+                    m.x = canvasW * 0.55 + (Math.random() - 0.5) * 40;
+                    m.y = platformYs[1];
+                    m.layer = 1;
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#e879f9');
+                });
+            } else if (skillId === 'overload') {
+                audio.playLightning();
+                battle.effects.push({ type: 'lightning', life: 0.3, maxLife: 0.3 });
+                [...battle.monsters].forEach(m => {
+                    const isCrit = Math.random() < stats.critRate;
+                    damageMonster(m, baseSkillDmg * (isCrit ? stats.critDmg : 1), isCrit, '#facc15');
+                });
+            }
+
+            syncTopAndBattleUI();
+        }
+
+        function performNormalAttack() {
+            const stats = getStats();
+            battle.hero.swingTimer = 0.16;
+
+            let target = battle.monsters.find(m => m.layer === battle.hero.layer && Math.abs(m.x - battle.hero.x) < 130);
+            if (!target && battle.monsters.length > 0) {
+                target = battle.monsters[0];
+                battle.hero.targetLayer = target.layer;
+            }
+            if (!target) return;
+
+            battle.hero.facing = target.x >= battle.hero.x ? 1 : -1;
+            const isCrit = Math.random() < stats.critRate;
+            const dmg = stats.atk * (isCrit ? stats.critDmg : 1);
+            audio.playHit(isCrit);
+            damageMonster(target, dmg, isCrit);
+        }
+
+        function updateBattle(dt) {
+            state.shiftSeconds = (state.shiftSeconds || 0) + dt;
+            state.mp = Math.min(state.maxMp, state.mp + dt * 6.5);
+            state.hp = Math.min(state.maxHp, state.hp + dt * 2.2);
+
+            Object.keys(skillTimers).forEach(k => {
+                if (skillTimers[k] > 0) {
+                    skillTimers[k] = Math.max(0, skillTimers[k] - dt);
+                }
+            });
+
+            if (state.autoSkill) {
+                state.equippedSkills.forEach(sid => {
+                    if (!sid) return;
+                    const def = SKILL_CATALOG.find(s => s.id === sid);
+                    if (def && (skillTimers[sid] || 0) <= 0 && state.mp >= def.mpCost) {
+                        castSkill(sid);
+                    }
+                });
+            }
+
+            if (battle.mode === 'boss' || battle.mode === 'defense' || battle.mode === 'bounty') {
+                battle.timer = Math.max(0, battle.timer - dt);
+                const timerEl = document.getElementById('specialBannerTimer');
+                const barEl = document.getElementById('specialBannerBar');
+                const maxDur = battle.mode === 'bounty' ? 35 : 30;
+                if (timerEl) timerEl.textContent = `${battle.timer.toFixed(1)}s`;
+                if (barEl) barEl.style.width = `${Math.max(0, (battle.timer / maxDur) * 100)}%`;
+
+                if (battle.timer <= 0) {
+                    if (battle.mode === 'boss') endBossMode(false);
+                    else if (battle.mode === 'defense') endDefenseMode(true);
+                    else {
+                        battle.mode = 'normal';
+                        const banner = document.getElementById('specialBannerContainer');
+                        if (banner) banner.classList.add('hidden');
+                        resetFloorWave(false);
+                    }
+                    return;
+                }
+            }
+
+            const stats = getStats();
+            battle.attackTimer += dt;
+            if (battle.attackTimer >= stats.atkInterval) {
+                battle.attackTimer = 0;
+                performNormalAttack();
+            }
+
+            // 英雄移動與樓層切換
+            const targetY = platformYs[battle.hero.targetLayer] || platformYs[1];
+            battle.hero.y += (targetY - battle.hero.y) * Math.min(1, dt * 11);
+            if (Math.abs(targetY - battle.hero.y) < 4) {
+                battle.hero.layer = battle.hero.targetLayer;
+            }
+
+            const focusMonster = battle.monsters.find(m => m.layer === battle.hero.layer) || battle.monsters[0];
+            if (focusMonster) {
+                const desiredX = Math.max(40, Math.min(canvasW - 40, focusMonster.x - battle.hero.facing * 44));
+                battle.hero.x += (desiredX - battle.hero.x) * Math.min(1, dt * 3.8);
+                if (Math.random() < dt * 0.85 && focusMonster.layer !== battle.hero.layer) {
+                    battle.hero.targetLayer = focusMonster.layer;
+                }
+            } else {
+                const patrolX = canvasW * 0.5 + Math.sin(state.shiftSeconds * 1.4) * (canvasW * 0.25);
+                battle.hero.x += (patrolX - battle.hero.x) * Math.min(1, dt * 2.5);
+                if (Math.random() < dt * 0.9) {
+                    battle.hero.targetLayer = Math.floor(Math.random() * 3);
+                }
+            }
+
+            if (battle.hero.swingTimer > 0) battle.hero.swingTimer = Math.max(0, battle.hero.swingTimer - dt);
+            if (battle.hero.hurtTimer > 0) battle.hero.hurtTimer = Math.max(0, battle.hero.hurtTimer - dt);
+            if (battle.screenShake > 0) battle.screenShake = Math.max(0, battle.screenShake - dt);
+
+            // 怪物移動與對英雄造成傷害
+            battle.enemyAtkTimer += dt;
+            const canEnemyHit = battle.enemyAtkTimer >= 1.15;
+            if (canEnemyHit) battle.enemyAtkTimer = 0;
+
+            battle.monsters.forEach(m => {
+                if (m.hitFlash > 0) m.hitFlash = Math.max(0, m.hitFlash - dt);
+                if (m.freezeTimer > 0) {
+                    m.freezeTimer = Math.max(0, m.freezeTimer - dt);
+                } else {
+                    m.x += m.vx * dt;
+                    if (m.x < 28) {
+                        m.x = 28;
+                        m.vx = Math.abs(m.vx);
+                    } else if (m.x > canvasW - 28) {
+                        m.x = canvasW - 28;
+                        m.vx = -Math.abs(m.vx);
+                    }
+                }
+
+                if (m.poisonTimer > 0) {
+                    m.poisonTimer = Math.max(0, m.poisonTimer - dt);
+                    if (Math.random() < dt * 2.5) {
+                        damageMonster(m, Math.max(1, stats.atk * 0.45), false, '#a3e635');
+                    }
+                }
+
+                // 近距離接觸或同層靠近英雄扣血
+                const sameLayer = Math.abs(m.layer - battle.hero.layer) === 0;
+                const distX = Math.abs(m.x - battle.hero.x);
+                if (canEnemyHit && m.freezeTimer <= 0 && ((sameLayer && distX < 52) || distX < 28)) {
+                    const incoming = Math.max(1, Math.floor(m.dmg || 2));
+                    state.hp = Math.max(0, state.hp - incoming);
+                    battle.hero.hurtTimer = 0.22;
+                    spawnFloatingText(battle.hero.x, battle.hero.y - 24, `-${incoming}`, '#f87171', 0.95);
+                    if (state.hp <= 0) {
+                        state.hp = state.maxHp;
+                        showToast('🚑 英雄受重傷已緊急回滿 HP！');
+                    }
+                }
+            });
+
+            // 補怪邏輯
+            const desiredCount = battle.mode === 'defense' ? 7 : (battle.mode === 'normal' ? 4 : 1);
+            if (battle.monsters.length < desiredCount && battle.mode !== 'boss' && battle.mode !== 'bounty') {
+                battle.spawnTimer += dt;
+                if (battle.spawnTimer >= 0.75) {
+                    battle.spawnTimer = 0;
+                    battle.monsters.push(createMonster({ layer: Math.floor(Math.random() * 3) }));
+                }
+            }
+
+            // 特效與跳字更新
+            for (let i = battle.effects.length - 1; i >= 0; i--) {
+                battle.effects[i].life -= dt;
+                if (battle.effects[i].life <= 0) battle.effects.splice(i, 1);
+            }
+            for (let i = battle.floatingTexts.length - 1; i >= 0; i--) {
+                const ft = battle.floatingTexts[i];
+                ft.y += ft.vy * dt;
+                ft.life -= dt;
+                ft.alpha = Math.max(0, ft.life / 0.78);
+                if (ft.life <= 0) battle.floatingTexts.splice(i, 1);
+            }
+        }
+
+        function drawBattleScene() {
+            if (!ctx || !canvas) return;
+            ctx.save();
+
+            if (battle.screenShake > 0) {
+                const mag = battle.screenShake * 18;
+                ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+            }
+
+            // 背景漸層與地下城石柱
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
+            bgGrad.addColorStop(0, '#0c101b');
+            bgGrad.addColorStop(0.55, '#151224');
+            bgGrad.addColorStop(1, '#0b0912');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvasW, canvasH);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            for (let px = 28; px < canvasW; px += 96) {
+                ctx.fillRect(px, 0, 22, canvasH);
+            }
+
+            // 繪製三層橫向平台
+            platformYs.forEach((py, idx) => {
+                ctx.fillStyle = idx === battle.hero.layer ? '#3b2f4f' : '#262033';
+                ctx.fillRect(14, py + 12, canvasW - 28, 7);
+                ctx.fillStyle = '#4f4269';
+                ctx.fillRect(14, py + 12, canvasW - 28, 2);
+            });
+
+            // 繪製怪物
+            battle.monsters.forEach(m => {
+                const drawY = platformYs[m.layer] || m.y;
+                ctx.save();
+                ctx.translate(m.x, drawY);
+
+                // 陰影
+                ctx.fillStyle = 'rgba(0,0,0,0.45)';
+                ctx.beginPath();
+                ctx.ellipse(0, 14, m.size * 0.65, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 身體像素塊
+                ctx.fillStyle = m.hitFlash > 0 ? '#ffffff' : (m.freezeTimer > 0 ? '#7dd3fc' : m.color);
+                const r = m.size * 0.72;
+                ctx.fillRect(-r, -r * 1.15, r * 2, r * 1.5);
+
+                ctx.font = `${Math.floor(m.size * 0.95)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(m.icon, 0, -r * 0.35);
+
+                // 血條
+                const hpPct = Math.max(0, Math.min(1, m.hp / Math.max(1, m.maxHp)));
+                const bw = Math.max(24, m.size * 1.4);
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(-bw / 2, -r * 1.55, bw, 4);
+                ctx.fillStyle = m.isBoss ? '#ef4444' : '#f97316';
+                ctx.fillRect(-bw / 2, -r * 1.55, bw * hpPct, 4);
+
+                ctx.restore();
+            });
+
+            // 繪製出戰英雄與裝備武器
+            const heroDef = HERO_DATA.find(h => h.id === state.activeHero) || HERO_DATA[0];
+            const wDef = WEAPON_CATALOG.find(w => w.id === state.equippedWeapon) || WEAPON_CATALOG[0];
+            ctx.save();
+            ctx.translate(battle.hero.x, battle.hero.y);
+            ctx.scale(battle.hero.facing, 1);
+
+            if (battle.hero.hurtTimer > 0) {
+                ctx.globalAlpha = 0.55;
+            }
+
+            // 披風與盔甲
+            ctx.fillStyle = heroDef.capeColor || '#1d4ed8';
+            ctx.fillRect(-13, -16, 12, 22);
+            ctx.fillStyle = heroDef.color || '#38bdf8';
+            ctx.fillRect(-9, -22, 18, 24);
+
+            // 武器揮砍
+            const swingAngle = battle.hero.swingTimer > 0 ? -0.9 : 0.25;
+            ctx.save();
+            ctx.translate(8, -8);
+            ctx.rotate(swingAngle);
+            ctx.fillStyle = wDef.bladeColor || '#e2e8f0';
+            ctx.fillRect(0, -3, 22, 5);
+            ctx.restore();
+
+            // 英雄圖示
+            ctx.font = '18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(heroDef.icon, 0, -12);
+
+            ctx.restore();
+
+            // 繪製技能視覺特效
+            battle.effects.forEach(fx => {
+                const ratio = Math.max(0, fx.life / Math.max(0.01, fx.maxLife));
+                ctx.save();
+                ctx.globalAlpha = ratio;
+                if (fx.type === 'lightning') {
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 3;
+                    for (let x = 40; x < canvasW - 20; x += 56) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x + 12, canvasH * 0.45);
+                        ctx.lineTo(x - 10, canvasH * 0.85);
+                        ctx.stroke();
+                    }
+                } else if (fx.type === 'meteor') {
+                    ctx.fillStyle = '#fb923c';
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, 26 * (1.3 - ratio * 0.4), 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (fx.type === 'slash') {
+                    ctx.strokeStyle = '#c084fc';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(fx.x + fx.dir * 24, fx.y - 10, 26, -0.8, 0.8);
+                    ctx.stroke();
+                } else if (fx.type === 'frost') {
+                    ctx.fillStyle = 'rgba(125, 211, 252, 0.25)';
+                    ctx.fillRect(0, 0, canvasW, canvasH);
+                } else if (fx.type === 'holy') {
+                    ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+                    ctx.fillRect(fx.x - 28, 0, 56, canvasH);
+                } else if (fx.type === 'acid') {
+                    ctx.fillStyle = 'rgba(163, 230, 53, 0.22)';
+                    ctx.fillRect(0, 0, canvasW, canvasH);
+                } else if (fx.type === 'blackhole') {
+                    ctx.fillStyle = '#3b0764';
+                    ctx.beginPath();
+                    ctx.arc(fx.x, fx.y, 34, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#e879f9';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+
+            // 繪製跳動傷害數字
+            battle.floatingTexts.forEach(ft => {
+                ctx.save();
+                ctx.globalAlpha = ft.alpha;
+                ctx.font = `900 ${Math.floor(14 * ft.scale)}px 'Noto Sans TC', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#09070d';
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillStyle = ft.color;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        let lastFrameTime = performance.now();
+        let uiSyncAccumulator = 0;
+        let cloudSyncAccumulator = 0;
+
         function gameLoop(now) {
-            const dt = Math.min(0.1, (now - lastTime) / 1000);
-            lastTime = now;
-            update(dt);
-            render();
+            const dt = Math.min(0.1, Math.max(0.001, (now - lastFrameTime) / 1000));
+            lastFrameTime = now;
+
+            if (isLoggedIn) {
+                updateBattle(dt);
+                drawBattleScene();
+
+                uiSyncAccumulator += dt;
+                if (uiSyncAccumulator >= 0.2) {
+                    uiSyncAccumulator = 0;
+                    syncTopAndBattleUI();
+                }
+
+                cloudSyncAccumulator += dt;
+                if (cloudSyncAccumulator >= 45) {
+                    cloudSyncAccumulator = 0;
+                    pushSaveToGoogleSheets(false);
+                }
+            }
+
             requestAnimationFrame(gameLoop);
         }
 
-        window.onload = function () {
-            resizeCanvas();
-            hero.x = cw * 0.3;
-            hero.y = platforms[1].y;
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('beforeunload', () => {
+            if (isLoggedIn) {
+                saveState();
+                pushSaveToGoogleSheets(false);
+            }
+        });
 
+        window.addEventListener('DOMContentLoaded', () => {
             bindEvents();
-            refreshAllUI();
-            openLoginModal('', '');
-
-            lastTime = performance.now();
+            resizeCanvas();
+            openLoginModal();
             requestAnimationFrame(gameLoop);
-        };
+        });
     </script>
 </body>
 </html>
