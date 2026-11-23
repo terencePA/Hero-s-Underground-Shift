@@ -1092,6 +1092,7 @@
             const syncedAt = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
             return {
+                action: 'sync',
                 playerId: state.playerId,
                 playerName: state.playerName,
                 syncedAt,
@@ -1110,6 +1111,52 @@
                 totalMerges: state.totalMerges,
                 saveJson: JSON.stringify(state)
             };
+        }
+
+        function sendViaBeaconOrGet(payload) {
+            try {
+                if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+                    const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' });
+                    navigator.sendBeacon(GAS_EXEC_URL, blob);
+                }
+            } catch (e) {}
+
+            try {
+                const compactPayload = {
+                    action: 'sync',
+                    playerId: payload.playerId,
+                    playerName: payload.playerName,
+                    syncedAt: payload.syncedAt,
+                    floor: payload.floor,
+                    maxFloor: payload.maxFloor,
+                    floorText: payload.floorText,
+                    maxFloorText: payload.maxFloorText,
+                    heroLevel: payload.heroLevel,
+                    gold: payload.gold,
+                    crystals: payload.crystals,
+                    activeHero: payload.activeHero,
+                    equippedWeapon: payload.equippedWeapon,
+                    killsInFloor: payload.killsInFloor,
+                    codexProgress: payload.codexProgress,
+                    totalKills: payload.totalKills,
+                    totalMerges: payload.totalMerges,
+                    saveJson: payload.saveJson
+                };
+                const params = new URLSearchParams({
+                    action: 'sync',
+                    data: JSON.stringify(compactPayload)
+                });
+                const syncUrl = `${GAS_EXEC_URL}?${params.toString()}&_t=${Date.now()}`;
+                if (typeof fetch === 'function') {
+                    fetch(syncUrl, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+                } else {
+                    const img = new Image();
+                    img.src = syncUrl;
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
         }
 
         async function pushSaveToGoogleSheets(forceImmediate = false) {
@@ -1134,16 +1181,18 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
+                sendViaBeaconOrGet(payload);
                 state.lastCloudSyncTime = payload.syncedAt;
                 saveState();
                 if (syncIcon) syncIcon.textContent = '已同步';
                 if (forceImmediate) {
-                    showToast(`☁️ 已同步帳號 ${state.playerId} 至 Google 試算表`);
+                    showToast(`☁️ 已送出帳號 ${state.playerId} 同步請求`);
                 }
             } catch (err) {
+                sendViaBeaconOrGet(buildCloudPayload());
                 if (syncIcon) syncIcon.textContent = '重試中';
                 if (forceImmediate) {
-                    showToast('⚠️ 雲端同步連線異常，將於背景持續重試');
+                    showToast('⚠️ 雲端同步連線異常，已改用備援通道送出');
                 }
             } finally {
                 isCloudSyncing = false;
@@ -3170,7 +3219,7 @@
                 }
 
                 cloudSyncAccumulator += dt;
-                if (cloudSyncAccumulator >= 45) {
+                if (cloudSyncAccumulator >= 5) {
                     cloudSyncAccumulator = 0;
                     pushSaveToGoogleSheets(false);
                 }
