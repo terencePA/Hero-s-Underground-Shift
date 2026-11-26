@@ -2354,7 +2354,7 @@ TR_RULES.push(...[["^(.+?) 在 (.+?) 種下了 (.+)$", "$1 planted $3 on $2", "$
       }, 1000);
       setInterval(() => {
         syncWithUploadFirst(true).then(() => { if (!gTimer && !uiBusy() && !busyGame && !modalFn) render(); else if (modalFn) refreshModal(); });
-      }, 12000);
+      }, 120000);
       syncWithUploadFirst(false).then(() => render());
     }
   </script>
